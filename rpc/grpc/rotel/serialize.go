@@ -31,7 +31,7 @@ func protoFromPower(value rotel.Power) pb.RotelState_Power {
 	switch value {
 	case rotel.ROTEL_POWER_ON:
 		return pb.RotelState_POWER_ON
-	case rotel.ROTEL_POWER_STANDY:
+	case rotel.ROTEL_POWER_STANDBY:
 		return pb.RotelState_POWER_STANDBY
 	case rotel.ROTEL_POWER_TOGGLE:
 		return pb.RotelState_POWER_TOGGLE
@@ -82,7 +82,7 @@ func protoToPower(value pb.RotelState_Power) rotel.Power {
 	case pb.RotelState_POWER_ON:
 		return rotel.ROTEL_POWER_ON
 	case pb.RotelState_POWER_STANDBY:
-		return rotel.ROTEL_POWER_STANDY
+		return rotel.ROTEL_POWER_STANDBY
 	case pb.RotelState_POWER_TOGGLE:
 		return rotel.ROTEL_POWER_TOGGLE
 	default:

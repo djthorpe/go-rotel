@@ -22,7 +22,7 @@ func SetPower(stub rotel.RotelClient, value string) error {
 		})
 	case "off", "standby":
 		return stub.Set(rotel.RotelState{
-			Power: rotel.ROTEL_POWER_STANDY,
+			Power: rotel.ROTEL_POWER_STANDBY,
 		})
 	case "", "toggle":
 		return stub.Set(rotel.RotelState{
