@@ -8,8 +8,9 @@ service Rotel {
     // Simple ping method to show server is "up"
     rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 
-    // Get current state
-    rpc Query(google.protobuf.Empty) returns (RotelState);
+    // Get and set state
+    rpc Get(google.protobuf.Empty) returns (RotelState);
+    rpc Set(RotelState) returns (google.protobuf.Empty);
 
     // Stream change events
     rpc StreamEvents (google.protobuf.Empty) returns (stream RotelEvent); 
@@ -23,8 +24,9 @@ message RotelEvent {
         EVENT_VOLUME = 2;
         EVENT_INPUT = 3;
     }
-    
+
     Type type = 1;
+    RotelState state = 2;
 }
 
 message RotelState {
@@ -53,8 +55,7 @@ message RotelState {
         VOLUME_NONE = 0;
     }
 
-    string model = 1;
-    Power power = 2;
-    Volume volume = 3;
-    Source input = 4;
+    Power power = 1;
+    Volume volume = 2;
+    Source input = 3;
 }

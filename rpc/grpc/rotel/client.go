@@ -71,17 +71,24 @@ func (this *Client) Ping() error {
 	}
 }
 
-func (this *Client) Query() (rotel.RotelState, error) {
+func (this *Client) Get() (rotel.RotelState, error) {
 	this.conn.Lock()
 	defer this.conn.Unlock()
 
 	// Get state
-	if _, err := this.RotelClient.Query(this.NewContext(0), &empty.Empty{}); err != nil {
+	if state, err := this.RotelClient.Get(this.NewContext(0), &empty.Empty{}); err != nil {
 		return rotel.RotelState{}, err
 	} else {
-		return rotel.RotelState{}, nil
+		return protoToState(state), nil
 	}
 
+}
+
+func (this *Client) Set(rotel.RotelState) error {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	return gopi.ErrNotImplemented
 }
 
 ////////////////////////////////////////////////////////////////////////////////

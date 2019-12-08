@@ -21,7 +21,7 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 		return fmt.Errorf("Invalid rotel client")
 	} else if err := rotel.Ping(); err != nil {
 		return err
-	} else if state, err := rotel.Query(); err != nil {
+	} else if state, err := rotel.Get(); err != nil {
 		return err
 	} else {
 		fmt.Println(state)

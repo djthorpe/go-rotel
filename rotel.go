@@ -142,8 +142,9 @@ type RotelClient interface {
 	// Ping remote service
 	Ping() error
 
-	// Query state
-	Query() (RotelState, error)
+	// Get and set state
+	Get() (RotelState, error)
+	Set(RotelState) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////

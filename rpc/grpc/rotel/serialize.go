@@ -19,9 +19,8 @@ func protoFromEvent(evt rotel.RotelEvent) *pb.RotelEvent {
 	return &pb.RotelEvent{}
 }
 
-func protoFromState(model string, power rotel.Power, volume rotel.Volume, input rotel.Source) *pb.RotelState {
+func protoFromState(power rotel.Power, volume rotel.Volume, input rotel.Source) *pb.RotelState {
 	return &pb.RotelState{
-		Model:  model,
 		Power:  protoFromPower(power),
 		Volume: protoFromVolume(volume),
 		Input:  protoFromSource(input),
@@ -61,4 +60,40 @@ func protoFromSource(value rotel.Source) pb.RotelState_Source {
 	default:
 		return pb.RotelState_INPUT_NONE
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FROM PROTOBUF
+
+func protoToState(proto *pb.RotelState) rotel.RotelState {
+	if proto == nil {
+		return rotel.RotelState{}
+	} else {
+		return rotel.RotelState{
+			Power:  protoToPower(proto.Power),
+			Volume: protoToVolume(proto.Volume),
+			Source: protoToSource(proto.Input),
+		}
+	}
+}
+
+func protoToPower(value pb.RotelState_Power) rotel.Power {
+	switch value {
+	case pb.RotelState_POWER_ON:
+		return rotel.ROTEL_POWER_ON
+	case pb.RotelState_POWER_STANDBY:
+		return rotel.ROTEL_POWER_STANDY
+	case pb.RotelState_POWER_TOGGLE:
+		return rotel.ROTEL_POWER_TOGGLE
+	default:
+		return rotel.ROTEL_POWER_NONE
+	}
+}
+
+func protoToVolume(value pb.RotelState_Volume) rotel.Volume {
+	return rotel.Volume(value)
+}
+
+func protoToSource(value pb.RotelState_Source) rotel.Source {
+	return rotel.Source(value)
 }
