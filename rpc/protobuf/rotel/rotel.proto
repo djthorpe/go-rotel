@@ -1,0 +1,27 @@
+syntax = "proto3";
+package gopi;
+
+import "google/protobuf/empty.proto";
+
+// The gaffer service definition
+service Rotel {
+    // Simple ping method to show server is "up"
+    rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
+
+    // Stream change events
+    rpc StreamEvents (google.protobuf.Empty) returns (stream Event); 
+}
+
+// Event type
+enum EventType {
+    EVENT_NONE = 0;
+    EVENT_POWER = 1;
+    EVENT_VOLUME = 2;
+    EVENT_INPUT = 3;
+}
+
+// Monitor discovery changes
+message Event {
+    EventType type = 1;
+}
+
