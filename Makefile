@@ -16,7 +16,7 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 
 all: install
 
-install: rotel-service
+install: rotel-service rotel-client
 
 protobuf:
 	$(GOGEN) -x ./rpc/...

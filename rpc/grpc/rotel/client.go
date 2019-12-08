@@ -84,11 +84,16 @@ func (this *Client) Get() (rotel.RotelState, error) {
 
 }
 
-func (this *Client) Set(rotel.RotelState) error {
+func (this *Client) Set(state rotel.RotelState) error {
 	this.conn.Lock()
 	defer this.conn.Unlock()
 
-	return gopi.ErrNotImplemented
+	// Set state
+	if _, err := this.RotelClient.Set(this.NewContext(0), protoFromState(state)); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -19,11 +19,11 @@ func protoFromEvent(evt rotel.RotelEvent) *pb.RotelEvent {
 	return &pb.RotelEvent{}
 }
 
-func protoFromState(power rotel.Power, volume rotel.Volume, input rotel.Source) *pb.RotelState {
+func protoFromState(state rotel.RotelState) *pb.RotelState {
 	return &pb.RotelState{
-		Power:  protoFromPower(power),
-		Volume: protoFromVolume(volume),
-		Input:  protoFromSource(input),
+		Power:  protoFromPower(state.Power),
+		Volume: protoFromVolume(state.Volume),
+		Input:  protoFromSource(state.Source),
 	}
 }
 

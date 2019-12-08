@@ -93,15 +93,38 @@ func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
 
 func (this *service) Get(context.Context, *empty.Empty) (*pb.RotelState, error) {
 	this.log.Debug("<grpc.service.rotel.Get>{ }")
-	return protoFromState(
-		this.rotel.Power(),
-		this.rotel.Volume(),
-		this.rotel.Input(),
-	), nil
+	return protoFromState(rotel.RotelState{
+		Power:  this.rotel.Power(),
+		Volume: this.rotel.Volume(),
+		Source: this.rotel.Input(),
+	}), nil
 }
 
 func (this *service) Set(_ context.Context, state *pb.RotelState) (*empty.Empty, error) {
 	this.log.Debug("<grpc.service.rotel.Set>{ %v }", state)
+
+	// Power
+	if power := protoToPower(state.Power); power != rotel.ROTEL_POWER_NONE {
+		if err := this.rotel.SetPower(power); err != nil {
+			return &empty.Empty{}, err
+		}
+	}
+
+	// Volume
+	if volume := protoToVolume(state.Volume); volume != rotel.ROTEL_VOLUME_NONE {
+		if err := this.rotel.SetVolume(volume); err != nil {
+			return &empty.Empty{}, err
+		}
+	}
+
+	// Source
+	if source := protoToSource(state.Input); source != rotel.ROTEL_SOURCE_NONE {
+		if err := this.rotel.SetInput(source); err != nil {
+			return &empty.Empty{}, err
+		}
+	}
+
+	// Success
 	return &empty.Empty{}, nil
 }
 
