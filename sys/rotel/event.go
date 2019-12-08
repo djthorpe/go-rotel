@@ -24,9 +24,6 @@ type evt struct {
 	power  rotel.Power
 	input  rotel.Source
 	volume rotel.Volume
-	mute   bool
-	text   string
-	number int
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +66,6 @@ func (this *driver) evtFreq(value string) {
 	this.Emit(&evt{
 		source: this,
 		typ:    rotel.EVENT_TYPE_FREQ,
-		text:   value,
 	})
 }
 
@@ -77,7 +73,27 @@ func (this *driver) evtMute(value bool) {
 	this.Emit(&evt{
 		source: this,
 		typ:    rotel.EVENT_TYPE_MUTE,
-		mute:   value,
+	})
+}
+
+func (this *driver) evtBypass(value bool) {
+	this.Emit(&evt{
+		source: this,
+		typ:    rotel.EVENT_TYPE_BYPASS,
+	})
+}
+
+func (this *driver) evtBass(value int) {
+	this.Emit(&evt{
+		source: this,
+		typ:    rotel.EVENT_TYPE_BASS,
+	})
+}
+
+func (this *driver) evtTreble(value int) {
+	this.Emit(&evt{
+		source: this,
+		typ:    rotel.EVENT_TYPE_TREBLE,
 	})
 }
 

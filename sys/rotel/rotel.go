@@ -320,13 +320,13 @@ func (this *driver) parse(commands []string) error {
 			}
 		} else if value := reBass.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
-				this.evtBass(v)
+				this.evtBass(int(v))
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reTreble.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
-				this.evtTreble(v)
+				this.evtTreble(int(v))
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
