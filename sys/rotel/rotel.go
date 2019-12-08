@@ -164,7 +164,7 @@ func (this *driver) SetPower(value rotel.Power) error {
 	switch value {
 	case rotel.ROTEL_POWER_ON:
 		return this.write("power_on")
-	case rotel.ROTEL_POWER_STANDY:
+	case rotel.ROTEL_POWER_STANDBY:
 		return this.write("power_off")
 	case rotel.ROTEL_POWER_TOGGLE:
 		return this.write("power_toggle")
@@ -189,8 +189,10 @@ func (this *driver) SetVolume(value rotel.Volume) error {
 // SetInput source of audio
 func (this *driver) SetInput(value rotel.Source) error {
 	this.log.Debug2("<rotel.SetInput>{ %v }", value)
-	if str := sourceToString(value); str != "" {
+	if str := sourceToString(value); str != "pc_usb" && str != "" {
 		return this.write(str)
+	} else if str == "pc_usb" {
+		return this.write("pcusb")
 	} else {
 		return gopi.ErrBadParameter
 	}
@@ -272,7 +274,7 @@ func (this *driver) parse(commands []string) error {
 			case "on":
 				this.evtPower(rotel.ROTEL_POWER_ON)
 			case "standby":
-				this.evtPower(rotel.ROTEL_POWER_STANDY)
+				this.evtPower(rotel.ROTEL_POWER_STANDBY)
 			default:
 				this.evtPower(rotel.ROTEL_POWER_OTHER)
 			}

@@ -11,3 +11,4 @@
 ._*
 .smb*
 *.pb.go
+.DS_Store
