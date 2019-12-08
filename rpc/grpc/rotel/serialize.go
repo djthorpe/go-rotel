@@ -9,12 +9,12 @@ import (
 // TYPES
 
 type evt struct {
-	r *pb.Event
+	r *pb.RotelEvent
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // TO PROTOBUF
 
-func protoFromEvent(evt rotel.RotelEvent) *pb.Event {
-	return &pb.Event{}
+func protoFromEvent(evt rotel.RotelEvent) *pb.RotelEvent {
+	return &pb.RotelEvent{}
 }

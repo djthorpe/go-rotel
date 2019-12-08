@@ -91,6 +91,11 @@ func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
 	return &empty.Empty{}, nil
 }
 
+func (this *service) Query(context.Context, *empty.Empty) (*pb.RotelState, error) {
+	this.log.Debug("<grpc.service.rotel.Query>{ }")
+	return &pb.RotelState{}, nil
+}
+
 // Stream events
 func (this *service) StreamEvents(_ *empty.Empty, stream pb.Rotel_StreamEventsServer) error {
 	this.log.Debug2("<grpc.service.rotel.StreamEvents>{}")
@@ -116,7 +121,7 @@ FOR_LOOP:
 				this.log.Warn("StreamEvents: Ignoring event: %v", evt)
 			}
 		case <-ticker.C:
-			if err := stream.Send(&pb.Event{}); err != nil {
+			if err := stream.Send(&pb.RotelEvent{}); err != nil {
 				this.log.Warn("StreamEvents: %v", err)
 				break FOR_LOOP
 			}
