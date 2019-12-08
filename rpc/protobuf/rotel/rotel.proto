@@ -1,0 +1,116 @@
+syntax = "proto3";
+package gopi;
+
+import "google/protobuf/empty.proto";
+
+// The gaffer service definition
+service Rotel {
+    // Simple ping method to show server is "up"
+    rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
+
+    // Return information
+    rpc Info(google.protobuf.Empty) returns (RotelInfo);
+
+    // Get and set state
+    rpc Get(google.protobuf.Empty) returns (RotelState);
+    rpc Set(RotelState) returns (google.protobuf.Empty);
+
+    // Send commands
+    rpc Send(RotelCommand) returns (google.protobuf.Empty);
+
+    // Stream change events
+    rpc StreamEvents (google.protobuf.Empty) returns (stream RotelEvent); 
+}
+
+// Information
+message RotelInfo {
+    string model = 1;
+}
+
+// Monitor discovery changes
+message RotelEvent {
+    enum Type {
+        EVENT_NONE = 0;
+        EVENT_POWER = 1;
+        EVENT_VOLUME = 2;
+        EVENT_INPUT = 3;
+    }
+
+    Type type = 1;
+    RotelState state = 2;
+}
+
+message RotelState {
+    enum Power {
+        POWER_NONE = 0;
+        POWER_ON = 1;
+        POWER_STANDBY = 2;
+        POWER_TOGGLE = 3;
+    }
+    enum Source {
+        INPUT_NONE = 0;
+        INPUT_CD = 1;
+        INPUT_COAX1 = 2;
+        INPUT_COAX2 = 3;
+        INPUT_OPT1 = 4;
+        INPUT_OPT2 = 5;
+        INPUT_AUX1 = 6;
+        INPUT_AUX2 = 7;
+        INPUT_TUNER = 8;
+        INPUT_PHONO = 9;
+        INPUT_USB = 10;
+        INPUT_BLUETOOTH = 11;
+        INPUT_PC_USB = 12;
+    }
+    enum Volume {
+        VOLUME_NONE = 0;
+    }
+
+    Power power = 1;
+    Volume volume = 2;
+    Source input = 3;
+}
+
+message RotelCommand {
+    enum Command {
+        COMMAND_NONE = 0;
+        COMMAND_PLAY = 1;
+        COMMAND_STOP = 2;
+        COMMAND_PAUSE = 3;
+        COMMAND_TRACK_NEXT = 4;
+        COMMAND_TRACK_PREV = 5;
+        COMMAND_MUTE_OFF = 6;
+        COMMAND_MUTE_ON = 7;
+        COMMAND_MUTE_TOGGLE = 8;
+        COMMAND_VOL_UP = 9;
+        COMMAND_VOL_DOWN = 10;
+        COMMAND_BYPASS_OFF = 11;
+        COMMAND_BYPASS_ON = 12;
+        COMMAND_BASS_UP = 13;
+        COMMAND_BASS_DOWN = 14;
+        COMMAND_BASS_RESET = 15;
+        COMMAND_TREBLE_UP = 16;
+        COMMAND_TREBLE_DOWN = 17;
+        COMMAND_TREBLE_RESET = 18;
+        COMMAND_BALANCE_LEFT = 19;
+        COMMAND_BALANCE_RIGHT = 20;
+        COMMAND_BALANCE_RESET = 21;
+        COMMAND_SPEAKER_A_TOGGLE = 22;
+        COMMAND_SPEAKER_B_TOGGLE = 23;
+        COMMAND_SPEAKER_A_ON = 24;
+        COMMAND_SPEAKER_A_OFF = 25;
+        COMMAND_SPEAKER_B_ON = 26;
+        COMMAND_SPEAKER_B_OFF = 27;
+        COMMAND_DIMMER_TOGGLE = 28;
+        COMMAND_DIMMER_0 = 29;
+        COMMAND_DIMMER_1 = 30;
+        COMMAND_DIMMER_2 = 31;
+        COMMAND_DIMMER_3 = 32;
+        COMMAND_DIMMER_4 = 33;
+        COMMAND_DIMMER_5 = 34;
+        COMMAND_DIMMER_6 = 35;
+        COMMAND_RS232_UPDATE_ON = 36;
+        COMMAND_RS232_UPDATE_OFF = 37;
+    }
+    Command command = 1;
+}
