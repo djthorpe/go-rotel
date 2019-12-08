@@ -131,8 +131,19 @@ type RotelEvent interface {
 	gopi.Event
 }
 
+type RotelState struct {
+	Model string
+	Power
+	Volume
+	Source
+}
+
 type RotelClient interface {
+	// Ping remote service
 	Ping() error
+
+	// Query state
+	Query() (RotelState, error)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -23,7 +23,7 @@ message RotelEvent {
         EVENT_VOLUME = 2;
         EVENT_INPUT = 3;
     }
-
+    
     Type type = 1;
 }
 
@@ -55,6 +55,6 @@ message RotelState {
 
     string model = 1;
     Power power = 2;
-    uint32 volume = 3;
+    Volume volume = 3;
     Source input = 4;
 }

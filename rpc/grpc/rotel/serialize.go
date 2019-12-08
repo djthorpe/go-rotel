@@ -18,3 +18,47 @@ type evt struct {
 func protoFromEvent(evt rotel.RotelEvent) *pb.RotelEvent {
 	return &pb.RotelEvent{}
 }
+
+func protoFromState(model string, power rotel.Power, volume rotel.Volume, input rotel.Source) *pb.RotelState {
+	return &pb.RotelState{
+		Model:  model,
+		Power:  protoFromPower(power),
+		Volume: protoFromVolume(volume),
+		Input:  protoFromSource(input),
+	}
+}
+
+func protoFromPower(value rotel.Power) pb.RotelState_Power {
+	switch value {
+	case rotel.ROTEL_POWER_ON:
+		return pb.RotelState_POWER_ON
+	case rotel.ROTEL_POWER_STANDY:
+		return pb.RotelState_POWER_STANDBY
+	case rotel.ROTEL_POWER_TOGGLE:
+		return pb.RotelState_POWER_TOGGLE
+	default:
+		return pb.RotelState_POWER_NONE
+	}
+}
+
+func protoFromVolume(value rotel.Volume) pb.RotelState_Volume {
+	switch {
+	case value == rotel.ROTEL_VOLUME_NONE:
+		return pb.RotelState_VOLUME_NONE
+	case value < rotel.ROTEL_VOLUME_MAX:
+		return pb.RotelState_Volume(value)
+	default:
+		return pb.RotelState_Volume(rotel.ROTEL_VOLUME_MAX)
+	}
+}
+
+func protoFromSource(value rotel.Source) pb.RotelState_Source {
+	switch {
+	case value == rotel.ROTEL_SOURCE_OTHER:
+		return pb.RotelState_INPUT_NONE
+	case value <= rotel.ROTEL_SOURCE_MAX:
+		return pb.RotelState_Source(value)
+	default:
+		return pb.RotelState_INPUT_NONE
+	}
+}

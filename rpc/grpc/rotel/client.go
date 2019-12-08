@@ -15,6 +15,7 @@ import (
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
+	rotel "github.com/djthorpe/rotel"
 
 	// Protocol buffers
 	pb "github.com/djthorpe/rotel/rpc/protobuf/rotel"
@@ -68,6 +69,19 @@ func (this *Client) Ping() error {
 	} else {
 		return nil
 	}
+}
+
+func (this *Client) Query() (rotel.RotelState, error) {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	// Get state
+	if _, err := this.RotelClient.Query(this.NewContext(0), &empty.Empty{}); err != nil {
+		return rotel.RotelState{}, err
+	} else {
+		return rotel.RotelState{}, nil
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -93,7 +93,12 @@ func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
 
 func (this *service) Query(context.Context, *empty.Empty) (*pb.RotelState, error) {
 	this.log.Debug("<grpc.service.rotel.Query>{ }")
-	return &pb.RotelState{}, nil
+	return protoFromState(
+		this.rotel.Model(),
+		this.rotel.Power(),
+		this.rotel.Volume(),
+		this.rotel.Input(),
+	), nil
 }
 
 // Stream events

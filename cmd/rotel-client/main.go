@@ -17,10 +17,14 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 	// Get the client
 	if stub, err := app.ClientPool.NewClientEx("gopi.Rotel", services, gopi.RPC_FLAG_SERVICE_ANY); err != nil {
 		return err
+	} else if rotel, ok := stub.(rotel.RotelClient); rotel == nil || ok == false {
+		return fmt.Errorf("Invalid rotel client")
+	} else if err := rotel.Ping(); err != nil {
+		return err
+	} else if state, err := rotel.Query(); err != nil {
+		return err
 	} else {
-		rotel := stub.(rotel.RotelClient)
-		fmt.Println(rotel)
-		rotel.Ping()
+		fmt.Println(state)
 	}
 
 	// Success
