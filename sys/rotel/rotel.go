@@ -57,8 +57,8 @@ var (
 	reModel  = regexp.MustCompile("^model=(\\w+)$")
 	rePower  = regexp.MustCompile("^power=(on|standby)$")
 	reVolume = regexp.MustCompile("^volume=(\\d+)$")
-	reBass   = regexp.MustCompile("^bass=(\\d+)$")
-	reTreble = regexp.MustCompile("^treble=(\\d+)$")
+	reBass   = regexp.MustCompile("^bass=([\\+\\-]?\\d+)$")
+	reTreble = regexp.MustCompile("^treble=([\\+\\-]?\\d+)$")
 	reMute   = regexp.MustCompile("^mute=(on|off)$")
 	reSource = regexp.MustCompile("^source=(\\w+)$")
 	reFreq   = regexp.MustCompile("^freq=(.+)$")
@@ -305,11 +305,17 @@ func (this *driver) parse(commands []string) error {
 			// Do nothing with this
 			this.log.Warn("TODO: %v", command)
 		} else if value := reBass.FindStringSubmatch(command); len(value) > 1 {
-			// Do nothing with this
-			this.log.Warn("TODO: %v", command)
+			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
+				this.log.Warn("TODO: bass=%v", v)
+			} else {
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
 		} else if value := reTreble.FindStringSubmatch(command); len(value) > 1 {
-			// Do nothing with this
-			this.log.Warn("TODO: %v", command)
+			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
+				this.log.Warn("TODO: treble=%v", v)
+			} else {
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
 		} else {
 			return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 		}
