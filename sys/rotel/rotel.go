@@ -57,9 +57,12 @@ var (
 	reModel  = regexp.MustCompile("^model=(\\w+)$")
 	rePower  = regexp.MustCompile("^power=(on|standby)$")
 	reVolume = regexp.MustCompile("^volume=(\\d+)$")
+	reBass   = regexp.MustCompile("^bass=(\\d+)$")
+	reTreble = regexp.MustCompile("^treble=(\\d+)$")
 	reMute   = regexp.MustCompile("^mute=(on|off)$")
 	reSource = regexp.MustCompile("^source=(\\w+)$")
 	reFreq   = regexp.MustCompile("^freq=(.+)$")
+	reBypass = regexp.MustCompile("^bypass=(on|off)$")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,6 +218,8 @@ func (this *driver) SendCommand(value rotel.Command) error {
 		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_MUTE_TOGGLE:
 		return this.write("mute")
+	case rotel.ROTEL_COMMAND_VOL_UP, rotel.ROTEL_COMMAND_VOL_DOWN:
+		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_BYPASS_OFF, rotel.ROTEL_COMMAND_BYPASS_ON:
 		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_BASS_UP, rotel.ROTEL_COMMAND_TREBLE_UP, rotel.ROTEL_COMMAND_BASS_DOWN, rotel.ROTEL_COMMAND_TREBLE_DOWN:
@@ -292,6 +297,19 @@ func (this *driver) parse(commands []string) error {
 			}
 		} else if value := reFreq.FindStringSubmatch(command); len(value) > 1 {
 			// Do nothing with this
+			this.log.Warn("TODO: %v", command)
+		} else if value := reMute.FindStringSubmatch(command); len(value) > 1 {
+			// Do nothing with this
+			this.log.Warn("TODO: %v", command)
+		} else if value := reBypass.FindStringSubmatch(command); len(value) > 1 {
+			// Do nothing with this
+			this.log.Warn("TODO: %v", command)
+		} else if value := reBass.FindStringSubmatch(command); len(value) > 1 {
+			// Do nothing with this
+			this.log.Warn("TODO: %v", command)
+		} else if value := reTreble.FindStringSubmatch(command); len(value) > 1 {
+			// Do nothing with this
+			this.log.Warn("TODO: %v", command)
 		} else {
 			return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 		}
