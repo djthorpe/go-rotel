@@ -95,7 +95,7 @@ const (
 	ROTEL_COMMAND_DIMMER_6
 	ROTEL_COMMAND_RS232_UPDATE_ON
 	ROTEL_COMMAND_RS232_UPDATE_OFF
-	ROTAL_COMMAND_MAX = ROTEL_COMMAND_RS232_UPDATE_OFF
+	ROTEL_COMMAND_MAX = ROTEL_COMMAND_RS232_UPDATE_OFF
 )
 
 const (
@@ -145,6 +145,9 @@ type RotelClient interface {
 	// Get and set state
 	Get() (RotelState, error)
 	Set(RotelState) error
+
+	// Send command
+	Send(Command) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////

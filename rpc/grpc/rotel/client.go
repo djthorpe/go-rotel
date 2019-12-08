@@ -96,6 +96,17 @@ func (this *Client) Set(state rotel.RotelState) error {
 	}
 }
 
+func (this *Client) Send(command rotel.Command) error {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	if _, err := this.RotelClient.Send(this.NewContext(0), protoFromCommand(command)); err != nil {
+		return err
+	} else {
+		return nil
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

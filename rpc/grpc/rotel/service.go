@@ -91,6 +91,13 @@ func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
 	return &empty.Empty{}, nil
 }
 
+func (this *service) Info(context.Context, *empty.Empty) (*pb.RotelInfo, error) {
+	this.log.Debug("<grpc.service.rotel.Info>{ }")
+	return &pb.RotelInfo{
+		Model: this.rotel.Model(),
+	}, nil
+}
+
 func (this *service) Get(context.Context, *empty.Empty) (*pb.RotelState, error) {
 	this.log.Debug("<grpc.service.rotel.Get>{ }")
 	return protoFromState(rotel.RotelState{
@@ -120,6 +127,20 @@ func (this *service) Set(_ context.Context, state *pb.RotelState) (*empty.Empty,
 	// Source
 	if source := protoToSource(state.Input); source != rotel.ROTEL_SOURCE_NONE {
 		if err := this.rotel.SetInput(source); err != nil {
+			return &empty.Empty{}, err
+		}
+	}
+
+	// Success
+	return &empty.Empty{}, nil
+}
+
+// Send command to amplifier
+func (this *service) Send(_ context.Context, req *pb.RotelCommand) (*empty.Empty, error) {
+	this.log.Debug2("<grpc.service.rotel.Send>{ req=%v }", req)
+
+	if command := protoToCommand(req.Command); command != rotel.ROTEL_COMMAND_NONE {
+		if err := this.rotel.SendCommand(command); err != nil {
 			return &empty.Empty{}, err
 		}
 	}

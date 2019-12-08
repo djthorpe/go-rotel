@@ -8,12 +8,23 @@ service Rotel {
     // Simple ping method to show server is "up"
     rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 
+    // Return information
+    rpc Info(google.protobuf.Empty) returns (RotelInfo);
+
     // Get and set state
     rpc Get(google.protobuf.Empty) returns (RotelState);
     rpc Set(RotelState) returns (google.protobuf.Empty);
 
+    // Send commands
+    rpc Send(RotelCommand) returns (google.protobuf.Empty);
+
     // Stream change events
     rpc StreamEvents (google.protobuf.Empty) returns (stream RotelEvent); 
+}
+
+// Information
+message RotelInfo {
+    string model = 1;
 }
 
 // Monitor discovery changes
@@ -58,4 +69,46 @@ message RotelState {
     Power power = 1;
     Volume volume = 2;
     Source input = 3;
+}
+
+message RotelCommand {
+    enum Command {
+        COMMAND_NONE = 0;
+        COMMAND_PLAY = 1;
+        COMMAND_STOP = 2;
+        COMMAND_PAUSE = 3;
+        COMMAND_TRACK_NEXT = 4;
+        COMMAND_TRACK_PREV = 5;
+        COMMAND_MUTE_OFF = 6;
+        COMMAND_MUTE_ON = 7;
+        COMMAND_MUTE_TOGGLE = 8;
+        COMMAND_BYPASS_OFF = 9;
+        COMMAND_BYPASS_ON = 10;
+        COMMAND_BASS_UP = 11;
+        COMMAND_BASS_DOWN = 12;
+        COMMAND_BASS_RESET = 13;
+        COMMAND_TREBLE_UP = 14;
+        COMMAND_TREBLE_DOWN = 15;
+        COMMAND_TREBLE_RESET = 16;
+        COMMAND_BALANCE_LEFT = 17;
+        COMMAND_BALANCE_RIGHT = 18;
+        COMMAND_BALANCE_RESET = 19;
+        COMMAND_SPEAKER_A_TOGGLE = 20;
+        COMMAND_SPEAKER_B_TOGGLE = 21;
+        COMMAND_SPEAKER_A_ON = 22;
+        COMMAND_SPEAKER_A_OFF = 23;
+        COMMAND_SPEAKER_B_ON = 24;
+        COMMAND_SPEAKER_B_OFF = 25;
+        COMMAND_DIMMER_TOGGLE = 26;
+        COMMAND_DIMMER_0 = 27;
+        COMMAND_DIMMER_1 = 28;
+        COMMAND_DIMMER_2 = 29;
+        COMMAND_DIMMER_3 = 30;
+        COMMAND_DIMMER_4 = 31;
+        COMMAND_DIMMER_5 = 32;
+        COMMAND_DIMMER_6 = 33;
+        COMMAND_RS232_UPDATE_ON = 34;
+        COMMAND_RS232_UPDATE_OFF = 35;
+    }
+    Command command = 1;
 }

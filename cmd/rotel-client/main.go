@@ -58,6 +58,19 @@ func SetSource(stub rotel.RotelClient, value string) error {
 	return fmt.Errorf("-source value should be one of: %v", strings.Join(values, ", "))
 }
 
+func SendCommand(stub rotel.RotelClient, value string) error {
+	values := make([]string, 0, rotel.ROTEL_SOURCE_MAX)
+	for v := rotel.ROTEL_COMMAND_NONE + 1; v <= rotel.ROTEL_COMMAND_MAX; v++ {
+		str := strings.ToLower(strings.TrimPrefix(fmt.Sprint(v), "ROTEL_COMMAND_"))
+		if strings.ToLower(value) == str {
+			return stub.Send(v)
+		} else {
+			values = append(values, str)
+		}
+	}
+	return fmt.Errorf("command should be one of: %v", strings.Join(values, ", "))
+}
+
 func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- struct{}) error {
 	// Get the client
 	if stub, err := app.ClientPool.NewClientEx("gopi.Rotel", services, gopi.RPC_FLAG_SERVICE_ANY); err != nil {
@@ -82,6 +95,12 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 		// Source
 		if source, exists := app.AppFlags.GetString("source"); exists {
 			if err := SetSource(device, source); err != nil {
+				return err
+			}
+		}
+		// Commands
+		for _, arg := range app.AppFlags.Args() {
+			if err := SendCommand(device, arg); err != nil {
 				return err
 			}
 		}

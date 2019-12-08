@@ -62,6 +62,17 @@ func protoFromSource(value rotel.Source) pb.RotelState_Source {
 	}
 }
 
+func protoFromCommand(value rotel.Command) *pb.RotelCommand {
+	switch {
+	case value > rotel.ROTEL_COMMAND_NONE && value <= rotel.ROTEL_COMMAND_MAX:
+		return &pb.RotelCommand{
+			Command: pb.RotelCommand_Command(value),
+		}
+	default:
+		return &pb.RotelCommand{}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // FROM PROTOBUF
 
@@ -96,4 +107,8 @@ func protoToVolume(value pb.RotelState_Volume) rotel.Volume {
 
 func protoToSource(value pb.RotelState_Source) rotel.Source {
 	return rotel.Source(value)
+}
+
+func protoToCommand(value pb.RotelCommand_Command) rotel.Command {
+	return rotel.Command(value)
 }
