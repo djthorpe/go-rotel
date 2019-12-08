@@ -105,6 +105,14 @@ const (
 	EVENT_TYPE_POWER EventType = iota
 	EVENT_TYPE_VOLUME
 	EVENT_TYPE_INPUT
+	EVENT_TYPE_MUTE
+	EVENT_TYPE_FREQ
+	EVENT_TYPE_BYPASS
+	EVENT_TYPE_BASS
+	EVENT_TYPE_TREBLE
+	EVENT_TYPE_BALANCE
+	EVENT_TYPE_SPEAKER
+	EVENT_TYPE_DIMMER
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,7 +148,12 @@ type RotelState struct {
 	Source
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// RPC Client Interface
+
 type RotelClient interface {
+	gopi.RPCClient
+
 	// Ping remote service
 	Ping() error
 

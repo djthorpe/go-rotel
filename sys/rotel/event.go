@@ -24,6 +24,9 @@ type evt struct {
 	power  rotel.Power
 	input  rotel.Source
 	volume rotel.Volume
+	mute   bool
+	text   string
+	number int
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,6 +63,22 @@ func (this *driver) evtVolume(value rotel.Volume) {
 			volume: value,
 		})
 	}
+}
+
+func (this *driver) evtFreq(value string) {
+	this.Emit(&evt{
+		source: this,
+		typ:    rotel.EVENT_TYPE_FREQ,
+		text:   value,
+	})
+}
+
+func (this *driver) evtMute(value bool) {
+	this.Emit(&evt{
+		source: this,
+		typ:    rotel.EVENT_TYPE_MUTE,
+		mute:   value,
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

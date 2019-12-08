@@ -54,15 +54,18 @@ const (
 )
 
 var (
-	reModel  = regexp.MustCompile("^model=(\\w+)$")
-	rePower  = regexp.MustCompile("^power=(on|standby)$")
-	reVolume = regexp.MustCompile("^volume=(\\d+)$")
-	reBass   = regexp.MustCompile("^bass=([\\+\\-]?\\d+)$")
-	reTreble = regexp.MustCompile("^treble=([\\+\\-]?\\d+)$")
-	reMute   = regexp.MustCompile("^mute=(on|off)$")
-	reSource = regexp.MustCompile("^source=(\\w+)$")
-	reFreq   = regexp.MustCompile("^freq=(.+)$")
-	reBypass = regexp.MustCompile("^bypass=(on|off)$")
+	reModel   = regexp.MustCompile("^model=(\\w+)$")
+	rePower   = regexp.MustCompile("^power=(on|standby)$")
+	reVolume  = regexp.MustCompile("^volume=(\\d+)$")
+	reBass    = regexp.MustCompile("^bass=([\\+\\-]?\\d+)$")
+	reTreble  = regexp.MustCompile("^treble=([\\+\\-]?\\d+)$")
+	reBalance = regexp.MustCompile("^balance=([LR]?)(\\d+)$")
+	reMute    = regexp.MustCompile("^mute=(on|off)$")
+	reSource  = regexp.MustCompile("^source=(\\w+)$")
+	reFreq    = regexp.MustCompile("^freq=(.+)$")
+	reBypass  = regexp.MustCompile("^bypass=(on|off)$")
+	reSpeaker = regexp.MustCompile("^speaker=(a|b|a_b|off)$")
+	reDimmer  = regexp.MustCompile("^dimmer=(\\d+)$")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -296,23 +299,45 @@ func (this *driver) parse(commands []string) error {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reFreq.FindStringSubmatch(command); len(value) > 1 {
-			// Do nothing with this
-			this.log.Warn("TODO: %v", command)
+			this.evtFreq(value[1])
 		} else if value := reMute.FindStringSubmatch(command); len(value) > 1 {
-			// Do nothing with this
-			this.log.Warn("TODO: %v", command)
+			switch value[1] {
+			case "on":
+				this.evtMute(true)
+			case "off":
+				this.evtMute(false)
+			default:
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
 		} else if value := reBypass.FindStringSubmatch(command); len(value) > 1 {
-			// Do nothing with this
-			this.log.Warn("TODO: %v", command)
+			switch value[1] {
+			case "on":
+				this.evtBypass(true)
+			case "off":
+				this.evtBypass(false)
+			default:
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
 		} else if value := reBass.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
-				this.log.Warn("TODO: bass=%v", v)
+				this.evtBass(v)
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reTreble.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
-				this.log.Warn("TODO: treble=%v", v)
+				this.evtTreble(v)
+			} else {
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
+		} else if value := reSpeaker.FindStringSubmatch(command); len(value) > 1 {
+			// Do nothing with this
+			this.log.Warn("TODO: %v", command)
+		} else if value := reBalance.FindStringSubmatch(command); len(value) > 2 {
+			this.log.Warn("TODO: balance=%v,%v", value[1], value[2])
+		} else if value := reDimmer.FindStringSubmatch(command); len(value) > 2 {
+			if v, err := strconv.ParseUint(value[1], 10, 32); err == nil {
+				this.log.Warn("TODO: dimmer=%v", v)
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
