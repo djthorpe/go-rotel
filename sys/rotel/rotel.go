@@ -464,7 +464,17 @@ func (this *driver) parse(commands []string) error {
 			// Do nothing with this
 			this.log.Warn("TODO: %v", command)
 		} else if value := reBalance.FindStringSubmatch(command); len(value) > 2 {
-			this.log.Warn("TODO: balance=%v,%v", value[1], value[2])
+			if v, err := strconv.ParseUint(value[2], 10, 32); err != nil {
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			} else if value[1] == "" && v == 0 {
+				this.evtBalance(rotel.ROTEL_BALANCE_NONE)
+			} else if value[1] == "L" && v > 0 && v <= uint64(-rotel.ROTEL_BALANCE_LEFT_MAX) {
+				this.evtBalance(rotel.Balance(-v))
+			} else if value[1] == "R" && v > 0 && v <= uint64(rotel.ROTEL_BALANCE_RIGHT_MAX) {
+				this.evtBalance(rotel.Balance(v))
+			} else {
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
 		} else if value := reDimmer.FindStringSubmatch(command); len(value) > 2 {
 			if v, err := strconv.ParseUint(value[1], 10, 32); err == nil {
 				this.evtDimmer(rotel.Dimmer(v))
