@@ -102,8 +102,6 @@ func (config Rotel) Open(logger gopi.Logger) (gopi.Driver, error) {
 	// Set state to values which mean the state needs
 	// to be set from the amp
 	this.state = rotel.RotelState{
-		Power:   rotel.ROTEL_POWER_OTHER,
-		Volume:  rotel.ROTEL_VOLUME_NONE,
 		Mute:    rotel.ROTEL_MUTE_OTHER,
 		Source:  rotel.ROTEL_SOURCE_OTHER,
 		Treble:  rotel.ROTEL_TONE_OTHER,
@@ -416,7 +414,7 @@ func (this *driver) parse(commands []string) error {
 			case "standby":
 				this.evtPower(rotel.ROTEL_POWER_STANDBY)
 			default:
-				this.evtPower(rotel.ROTEL_POWER_OTHER)
+				this.evtPower(rotel.ROTEL_POWER_NONE)
 			}
 		} else if value := reSource.FindStringSubmatch(command); len(value) > 1 {
 			if source := stringToSource(value[1]); source != rotel.ROTEL_SOURCE_NONE {

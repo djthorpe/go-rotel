@@ -93,7 +93,6 @@ const (
 	ROTEL_POWER_ON   Power = iota
 	ROTEL_POWER_STANDBY
 	ROTEL_POWER_TOGGLE
-	ROTEL_POWER_OTHER
 	ROTEL_POWER_MAX = ROTEL_POWER_TOGGLE
 )
 
@@ -212,8 +211,6 @@ func (p Power) String() string {
 		return "ROTEL_POWER_STANDBY"
 	case ROTEL_POWER_TOGGLE:
 		return "ROTEL_POWER_TOGGLE"
-	case ROTEL_POWER_OTHER:
-		return "ROTEL_POWER_OTHER"
 	default:
 		return "[?? Invalid Power value]"
 	}
