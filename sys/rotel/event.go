@@ -21,80 +21,120 @@ import (
 type evt struct {
 	source gopi.Driver
 	typ    rotel.EventType
-	power  rotel.Power
-	input  rotel.Source
-	volume rotel.Volume
+	state  rotel.RotelState
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // EMIT EVENTS
 
 func (this *driver) evtPower(value rotel.Power) {
-	if this.power != value {
-		this.power = value
+	if this.state.Power != value {
+		this.state.Power = value
 		this.Emit(&evt{
 			source: this,
 			typ:    rotel.EVENT_TYPE_POWER,
-			power:  this.power,
+			state:  this.state,
 		})
 	}
 }
 
-func (this *driver) evtInput(value rotel.Source) {
-	if this.input != value {
-		this.input = value
+func (this *driver) evtSource(value rotel.Source) {
+	if this.state.Source != value {
+		this.state.Source = value
 		this.Emit(&evt{
 			source: this,
-			typ:    rotel.EVENT_TYPE_INPUT,
-			input:  value,
+			typ:    rotel.EVENT_TYPE_SOURCE,
+			state:  this.state,
 		})
 	}
 }
 
 func (this *driver) evtVolume(value rotel.Volume) {
-	if this.volume != value {
-		this.volume = value
+	if this.state.Volume != value {
+		this.state.Volume = value
 		this.Emit(&evt{
 			source: this,
 			typ:    rotel.EVENT_TYPE_VOLUME,
-			volume: value,
+			state:  this.state,
 		})
 	}
 }
 
 func (this *driver) evtFreq(value string) {
-	this.Emit(&evt{
-		source: this,
-		typ:    rotel.EVENT_TYPE_FREQ,
-	})
+	if this.state.Freq != value {
+		this.state.Freq = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_FREQ,
+			state:  this.state,
+		})
+	}
 }
 
-func (this *driver) evtMute(value bool) {
-	this.Emit(&evt{
-		source: this,
-		typ:    rotel.EVENT_TYPE_MUTE,
-	})
+func (this *driver) evtMute(value rotel.Mute) {
+	if this.state.Mute != value {
+		this.state.Mute = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_MUTE,
+			state:  this.state,
+		})
+	}
 }
 
 func (this *driver) evtBypass(value bool) {
-	this.Emit(&evt{
-		source: this,
-		typ:    rotel.EVENT_TYPE_BYPASS,
-	})
+	if this.state.Bypass != value {
+		this.state.Bypass = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_BYPASS,
+			state:  this.state,
+		})
+	}
 }
 
-func (this *driver) evtBass(value int) {
-	this.Emit(&evt{
-		source: this,
-		typ:    rotel.EVENT_TYPE_BASS,
-	})
+func (this *driver) evtBass(value rotel.Tone) {
+	if this.state.Bass != value {
+		this.state.Bass = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_BASS,
+			state:  this.state,
+		})
+	}
 }
 
-func (this *driver) evtTreble(value int) {
-	this.Emit(&evt{
-		source: this,
-		typ:    rotel.EVENT_TYPE_TREBLE,
-	})
+func (this *driver) evtTreble(value rotel.Tone) {
+	if this.state.Treble != value {
+		this.state.Treble = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_TREBLE,
+			state:  this.state,
+		})
+	}
+}
+
+func (this *driver) evtBalance(value rotel.Balance) {
+	if this.state.Balance != value {
+		this.state.Balance = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_BALANCE,
+			state:  this.state,
+		})
+	}
+}
+
+func (this *driver) evtDimmer(value rotel.Dimmer) {
+	if this.state.Dimmer != value {
+		this.state.Dimmer = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_DIMMER,
+			state:  this.state,
+		})
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,26 +152,34 @@ func (this *evt) Type() rotel.EventType {
 	return this.typ
 }
 
-func (this *evt) Power() rotel.Power {
-	return this.power
-}
-
-func (this *evt) Input() rotel.Source {
-	return this.input
-}
-
-func (this *evt) Volume() rotel.Volume {
-	return this.volume
+func (this *evt) State() rotel.RotelState {
+	return this.state
 }
 
 func (this *evt) String() string {
 	switch this.typ {
 	case rotel.EVENT_TYPE_POWER:
-		return fmt.Sprintf("<rotel.Event>{ type=%v power=%v }", this.typ, this.power)
-	case rotel.EVENT_TYPE_INPUT:
-		return fmt.Sprintf("<rotel.Event>{ type=%v input=%v }", this.typ, this.input)
+		return fmt.Sprintf("<rotel.Event>{ type=%v power=%v }", this.typ, this.state.Power)
+	case rotel.EVENT_TYPE_SOURCE:
+		return fmt.Sprintf("<rotel.Event>{ type=%v source=%v }", this.typ, this.state.Source)
 	case rotel.EVENT_TYPE_VOLUME:
-		return fmt.Sprintf("<rotel.Event>{ type=%v volume=%v }", this.typ, this.volume)
+		return fmt.Sprintf("<rotel.Event>{ type=%v volume=%v }", this.typ, this.state.Volume)
+	case rotel.EVENT_TYPE_MUTE:
+		return fmt.Sprintf("<rotel.Event>{ type=%v mute=%v }", this.typ, this.state.Mute)
+	case rotel.EVENT_TYPE_FREQ:
+		return fmt.Sprintf("<rotel.Event>{ type=%v freq=%v }", this.typ, this.state.Freq)
+	case rotel.EVENT_TYPE_BASS:
+		return fmt.Sprintf("<rotel.Event>{ type=%v bass=%v }", this.typ, this.state.Bass)
+	case rotel.EVENT_TYPE_TREBLE:
+		return fmt.Sprintf("<rotel.Event>{ type=%v treble=%v }", this.typ, this.state.Treble)
+	case rotel.EVENT_TYPE_BYPASS:
+		return fmt.Sprintf("<rotel.Event>{ type=%v bypass=%v }", this.typ, this.state.Bypass)
+	case rotel.EVENT_TYPE_BALANCE:
+		return fmt.Sprintf("<rotel.Event>{ type=%v balance=%v }", this.typ, this.state.Balance)
+	case rotel.EVENT_TYPE_SPEAKER:
+		return fmt.Sprintf("<rotel.Event>{ type=%v speaker=%v }", this.typ, this.state.Speaker)
+	case rotel.EVENT_TYPE_DIMMER:
+		return fmt.Sprintf("<rotel.Event>{ type=%v dimmer=%v }", this.typ, this.state.Dimmer)
 	default:
 		return fmt.Sprintf("<rotel.Event>{ type=%v }", this.typ)
 	}

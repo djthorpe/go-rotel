@@ -100,35 +100,15 @@ func (this *service) Info(context.Context, *empty.Empty) (*pb.RotelInfo, error) 
 
 func (this *service) Get(context.Context, *empty.Empty) (*pb.RotelState, error) {
 	this.log.Debug("<grpc.service.rotel.Get>{ }")
-	return protoFromState(rotel.RotelState{
-		Power:  this.rotel.Power(),
-		Volume: this.rotel.Volume(),
-		Source: this.rotel.Input(),
-	}), nil
+	return protoFromState(this.rotel.Get()), nil
 }
 
 func (this *service) Set(_ context.Context, state *pb.RotelState) (*empty.Empty, error) {
 	this.log.Debug("<grpc.service.rotel.Set>{ %v }", state)
 
-	// Power
-	if power := protoToPower(state.Power); power != rotel.ROTEL_POWER_NONE {
-		if err := this.rotel.SetPower(power); err != nil {
-			return &empty.Empty{}, err
-		}
-	}
-
-	// Volume
-	if volume := protoToVolume(state.Volume); volume != rotel.ROTEL_VOLUME_NONE {
-		if err := this.rotel.SetVolume(volume); err != nil {
-			return &empty.Empty{}, err
-		}
-	}
-
-	// Source
-	if source := protoToSource(state.Input); source != rotel.ROTEL_SOURCE_NONE {
-		if err := this.rotel.SetInput(source); err != nil {
-			return &empty.Empty{}, err
-		}
+	// Set state
+	if err := this.rotel.Set(protoToState(state)); err != nil {
+		return &empty.Empty{}, err
 	}
 
 	// Success
@@ -140,7 +120,7 @@ func (this *service) Send(_ context.Context, req *pb.RotelCommand) (*empty.Empty
 	this.log.Debug2("<grpc.service.rotel.Send>{ req=%v }", req)
 
 	if command := protoToCommand(req.Command); command != rotel.ROTEL_COMMAND_NONE {
-		if err := this.rotel.SendCommand(command); err != nil {
+		if err := this.rotel.Send(command); err != nil {
 			return &empty.Empty{}, err
 		}
 	}
