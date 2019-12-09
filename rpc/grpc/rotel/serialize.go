@@ -23,7 +23,7 @@ func protoFromState(state rotel.RotelState) *pb.RotelState {
 	return &pb.RotelState{
 		Power:  protoFromPower(state.Power),
 		Volume: protoFromVolume(state.Volume),
-		Input:  protoFromSource(state.Source),
+		Source: protoFromSource(state.Source),
 	}
 }
 
@@ -81,9 +81,17 @@ func protoToState(proto *pb.RotelState) rotel.RotelState {
 		return rotel.RotelState{}
 	} else {
 		return rotel.RotelState{
-			Power:  protoToPower(proto.Power),
-			Volume: protoToVolume(proto.Volume),
-			Source: protoToSource(proto.Input),
+			Power:   protoToPower(proto.Power),
+			Volume:  protoToVolume(proto.Volume),
+			Source:  protoToSource(proto.Source),
+			Mute:    protoToMute(proto.Mute),
+			Freq:    proto.Freq,
+			Bypass:  proto.Bypass,
+			Bass:    protoToTone(proto.Bass),
+			Treble:  protoToTone(proto.Treble),
+			Balance: protoToBalance(proto.Balance),
+			Speaker: protoToSpeaker(proto.Speaker),
+			Dimmer:  protoToDimmer(proto.Dimmer),
 		}
 	}
 }

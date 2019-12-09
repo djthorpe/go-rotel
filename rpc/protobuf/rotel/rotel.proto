@@ -33,7 +33,15 @@ message RotelEvent {
         EVENT_NONE = 0;
         EVENT_POWER = 1;
         EVENT_VOLUME = 2;
-        EVENT_INPUT = 3;
+        EVENT_SOURCE = 3;
+        EVENT_MUTE = 4;
+        EVENT_FREQ = 5;
+        EVENT_BYPASS = 6;
+        EVENT_BASS = 7;
+        EVENT_TREBLE = 8;
+        EVENT_BALANCE = 9;
+        EVENT_SPEAKER = 10;
+        EVENT_DIMMER = 11;
     }
 
     Type type = 1;
@@ -65,10 +73,37 @@ message RotelState {
     enum Volume {
         VOLUME_NONE = 0;
     }
+    enum Mute {
+        MUTE_OFF = 0;
+        MUTE_ON = 1;
+    }
+    enum Tone {
+        TONE_NONE = 0;
+    }
+    enum Balance {
+        BALANCE_NONE = 0;
+    }
+    enum Speaker {
+        SPEAKER_NONE = 0;
+        SPEAKER_A = 1;
+        SPEAKER_B = 2;
+        SPEAKER_ALL = 3;
+    }
+    enum Dimmer {
+        DIMMER_NONE = 0;        
+    }
 
     Power power = 1;
     Volume volume = 2;
-    Source input = 3;
+    Source source = 3;
+    Mute mute = 4;
+    string Freq = 5;
+    bool bypass = 6;
+    Tone bass = 7;
+    Tone treble = 8;
+    Balance balance = 9;
+    Speaker speaker = 10;
+    Dimmer dimmer = 11;
 }
 
 message RotelCommand {
@@ -102,13 +137,6 @@ message RotelCommand {
         COMMAND_SPEAKER_B_ON = 26;
         COMMAND_SPEAKER_B_OFF = 27;
         COMMAND_DIMMER_TOGGLE = 28;
-        COMMAND_DIMMER_0 = 29;
-        COMMAND_DIMMER_1 = 30;
-        COMMAND_DIMMER_2 = 31;
-        COMMAND_DIMMER_3 = 32;
-        COMMAND_DIMMER_4 = 33;
-        COMMAND_DIMMER_5 = 34;
-        COMMAND_DIMMER_6 = 35;
         COMMAND_RS232_UPDATE_ON = 36;
         COMMAND_RS232_UPDATE_OFF = 37;
     }

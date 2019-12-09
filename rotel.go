@@ -19,20 +19,90 @@ import (
 // TYPES
 
 type (
+	Command   uint16
+	EventType uint16
 	Power     uint16
 	Volume    uint16
 	Source    uint16
-	Command   uint16
-	EventType uint16
+	Mute      uint16
+	Tone      int16
+	Balance   int16
+	Dimmer    uint16
 )
+
+type Speaker struct{ A, B bool }
+
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACES
+
+type Rotel interface {
+	gopi.Driver
+	gopi.Publisher
+
+	// Information
+	Model() string
+
+	// Get and set state
+	Get() RotelState
+	Set(RotelState) error
+
+	// Send Command
+	Send(Command) error
+}
+
+type RotelEvent interface {
+	gopi.Event
+
+	Type() EventType
+	State() RotelState
+}
+
+type RotelState struct {
+	Power
+	Volume
+	Mute
+	Source
+	Freq   string
+	Bypass bool
+	Treble Tone
+	Bass   Tone
+	Balance
+	Speaker
+	Dimmer
+}
+
+type RotelClient interface {
+	gopi.RPCClient
+
+	// Ping remote service
+	Ping() error
+
+	// Get and set state
+	Get() (RotelState, error)
+	Set(RotelState) error
+
+	// Send command
+	Send(Command) error
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
 
 const (
 	ROTEL_POWER_NONE Power = 0
 	ROTEL_POWER_ON   Power = iota
 	ROTEL_POWER_STANDBY
 	ROTEL_POWER_TOGGLE
-	ROTEL_POWER_OTHER
-	ROTEL_POWER_MAX = ROTEL_POWER_OTHER
+	ROTEL_POWER_MAX = ROTEL_POWER_TOGGLE
+)
+
+const (
+	ROTEL_MUTE_NONE Mute = 0
+	ROTEL_MUTE_ON   Mute = iota
+	ROTEL_MUTE_OFF
+	ROTEL_MUTE_TOGGLE
+	ROTEL_MUTE_OTHER
+	ROTEL_MUTE_MAX = ROTEL_MUTE_TOGGLE
 )
 
 const (
@@ -56,6 +126,26 @@ const (
 const (
 	ROTEL_VOLUME_NONE Volume = 0
 	ROTEL_VOLUME_MAX  Volume = 96
+)
+
+const (
+	ROTEL_TONE_NONE  Tone = 0
+	ROTEL_TONE_MIN   Tone = -100
+	ROTEL_TONE_MAX   Tone = 100
+	ROTEL_TONE_OTHER Tone = ROTEL_TONE_MAX + 1
+)
+
+const (
+	ROTEL_BALANCE_NONE      Balance = 0
+	ROTEL_BALANCE_LEFT_MAX  Balance = -15
+	ROTEL_BALANCE_RIGHT_MAX Balance = 15
+	ROTEL_BALANCE_OTHER     Balance = ROTEL_BALANCE_RIGHT_MAX + 1
+)
+
+const (
+	ROTEL_DIMMER_NONE  Dimmer = 0
+	ROTEL_DIMMER_MAX   Dimmer = 9
+	ROTEL_DIMMER_OTHER Dimmer = ROTEL_DIMMER_MAX + 1
 )
 
 const (
@@ -88,13 +178,6 @@ const (
 	ROTEL_COMMAND_SPEAKER_B_ON
 	ROTEL_COMMAND_SPEAKER_B_OFF
 	ROTEL_COMMAND_DIMMER_TOGGLE
-	ROTEL_COMMAND_DIMMER_0
-	ROTEL_COMMAND_DIMMER_1
-	ROTEL_COMMAND_DIMMER_2
-	ROTEL_COMMAND_DIMMER_3
-	ROTEL_COMMAND_DIMMER_4
-	ROTEL_COMMAND_DIMMER_5
-	ROTEL_COMMAND_DIMMER_6
 	ROTEL_COMMAND_RS232_UPDATE_ON
 	ROTEL_COMMAND_RS232_UPDATE_OFF
 	ROTEL_COMMAND_MAX = ROTEL_COMMAND_RS232_UPDATE_OFF
@@ -104,7 +187,7 @@ const (
 	EVENT_TYPE_NONE  EventType = 0
 	EVENT_TYPE_POWER EventType = iota
 	EVENT_TYPE_VOLUME
-	EVENT_TYPE_INPUT
+	EVENT_TYPE_SOURCE
 	EVENT_TYPE_MUTE
 	EVENT_TYPE_FREQ
 	EVENT_TYPE_BYPASS
@@ -114,56 +197,6 @@ const (
 	EVENT_TYPE_SPEAKER
 	EVENT_TYPE_DIMMER
 )
-
-////////////////////////////////////////////////////////////////////////////////
-// INTERFACES
-
-type Rotel interface {
-	gopi.Driver
-	gopi.Publisher
-
-	// Get parameters
-	Model() string
-	Power() Power
-	Volume() Volume
-	Input() Source
-
-	// Set parameters
-	SetPower(Power) error
-	SetVolume(Volume) error
-	SetInput(Source) error
-
-	// Send Command
-	SendCommand(Command) error
-}
-
-type RotelEvent interface {
-	gopi.Event
-}
-
-type RotelState struct {
-	Model string
-	Power
-	Volume
-	Source
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// RPC Client Interface
-
-type RotelClient interface {
-	gopi.RPCClient
-
-	// Ping remote service
-	Ping() error
-
-	// Get and set state
-	Get() (RotelState, error)
-	Set(RotelState) error
-
-	// Send command
-	Send(Command) error
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
@@ -178,10 +211,25 @@ func (p Power) String() string {
 		return "ROTEL_POWER_STANDBY"
 	case ROTEL_POWER_TOGGLE:
 		return "ROTEL_POWER_TOGGLE"
-	case ROTEL_POWER_OTHER:
-		return "ROTEL_POWER_OTHER"
 	default:
 		return "[?? Invalid Power value]"
+	}
+}
+
+func (m Mute) String() string {
+	switch m {
+	case ROTEL_MUTE_NONE:
+		return "ROTEL_MUTE_NONE"
+	case ROTEL_MUTE_ON:
+		return "ROTEL_MUTE_ON"
+	case ROTEL_MUTE_OFF:
+		return "ROTEL_MUTE_OFF"
+	case ROTEL_MUTE_TOGGLE:
+		return "ROTEL_MUTE_TOGGLE"
+	case ROTEL_MUTE_OTHER:
+		return "ROTEL_MUTE_OTHER"
+	default:
+		return "[?? Invalid Mute value]"
 	}
 }
 
@@ -194,6 +242,42 @@ func (v Volume) String() string {
 		return fmt.Sprintf("ROTEL_VOLUME_%d", v)
 	} else {
 		return "[?? Invalid Volume value]"
+	}
+}
+
+func (t Tone) String() string {
+	switch {
+	case t == ROTEL_TONE_NONE:
+		return "ROTEL_TONE_NONE"
+	case t == ROTEL_TONE_MAX:
+		return "ROTEL_TONE_MAX"
+	case t == ROTEL_TONE_MIN:
+		return "ROTEL_TONE_MIN"
+	case t == ROTEL_TONE_OTHER:
+		return "ROTEL_TONE_OTHER"
+	case t >= ROTEL_TONE_MIN && t < ROTEL_TONE_NONE:
+		return fmt.Sprintf("ROTEL_TONE_MINUS_%d", -t)
+	case t <= ROTEL_TONE_MAX && t > ROTEL_TONE_NONE:
+		return fmt.Sprintf("ROTEL_TONE_PLUS_%d", t)
+	default:
+		return "[?? Invalid Tone value]"
+	}
+}
+
+func (b Balance) String() string {
+	switch {
+	case b == ROTEL_BALANCE_NONE:
+		return "ROTEL_BALANCE_NONE"
+	case b == ROTEL_BALANCE_LEFT_MAX:
+		return "ROTEL_BALANCE_LEFT_MAX"
+	case b == ROTEL_BALANCE_RIGHT_MAX:
+		return "ROTEL_BALANCE_RIGHT_MAX"
+	case b >= ROTEL_BALANCE_LEFT_MAX && b < ROTEL_BALANCE_NONE:
+		return fmt.Sprintf("ROTEL_BALANCE_LEFT_%d", -b)
+	case b <= ROTEL_BALANCE_RIGHT_MAX && b > ROTEL_BALANCE_NONE:
+		return fmt.Sprintf("ROTEL_BALANCE_RIGHT_%d", b)
+	default:
+		return "[?? Invalid Balance value]"
 	}
 }
 
@@ -229,6 +313,34 @@ func (s Source) String() string {
 		return "ROTEL_SOURCE_OTHER"
 	default:
 		return "[?? Invalid Source value]"
+	}
+}
+
+func (s Speaker) String() string {
+	switch {
+	case s.A == true && s.B == false:
+		return "ROTEL_SPEAKER_A"
+	case s.B == true && s.A == false:
+		return "ROTEL_SPEAKER_B"
+	case s.B == true && s.A == true:
+		return "ROTEL_SPEAKER_BOTH"
+	default:
+		return "ROTEL_SPEAKER_NONE"
+	}
+}
+
+func (d Dimmer) String() string {
+	switch {
+	case d == ROTEL_DIMMER_NONE:
+		return "ROTEL_DIMMER_NONE"
+	case d == ROTEL_DIMMER_MAX:
+		return "ROTEL_DIMMER_MAX"
+	case d == ROTEL_DIMMER_OTHER:
+		return "ROTEL_DIMMER_OTHER"
+	case d > ROTEL_DIMMER_NONE && d <= ROTEL_DIMMER_MAX:
+		return fmt.Sprintf("ROTEL_DIMMER_%d", d)
+	default:
+		return "[?? Invalid Dimmer value]"
 	}
 }
 
@@ -292,20 +404,6 @@ func (c Command) String() string {
 		return "ROTEL_COMMAND_SPEAKER_B_OFF"
 	case ROTEL_COMMAND_DIMMER_TOGGLE:
 		return "ROTEL_COMMAND_DIMMER_TOGGLE"
-	case ROTEL_COMMAND_DIMMER_0:
-		return "ROTEL_COMMAND_DIMMER_0"
-	case ROTEL_COMMAND_DIMMER_1:
-		return "ROTEL_COMMAND_DIMMER_1"
-	case ROTEL_COMMAND_DIMMER_2:
-		return "ROTEL_COMMAND_DIMMER_2"
-	case ROTEL_COMMAND_DIMMER_3:
-		return "ROTEL_COMMAND_DIMMER_3"
-	case ROTEL_COMMAND_DIMMER_4:
-		return "ROTEL_COMMAND_DIMMER_4"
-	case ROTEL_COMMAND_DIMMER_5:
-		return "ROTEL_COMMAND_DIMMER_5"
-	case ROTEL_COMMAND_DIMMER_6:
-		return "ROTEL_COMMAND_DIMMER_6"
 	case ROTEL_COMMAND_RS232_UPDATE_ON:
 		return "ROTEL_COMMAND_RS232_UPDATE_ON"
 	case ROTEL_COMMAND_RS232_UPDATE_OFF:
