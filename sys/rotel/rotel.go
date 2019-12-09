@@ -461,8 +461,18 @@ func (this *driver) parse(commands []string) error {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reSpeaker.FindStringSubmatch(command); len(value) > 1 {
-			// Do nothing with this
-			this.log.Warn("TODO: %v", command)
+			switch value[1] {
+			case "off":
+				this.evtSpeaker(rotel.Speaker{false, false})
+			case "a":
+				this.evtSpeaker(rotel.Speaker{A: true})
+			case "b":
+				this.evtSpeaker(rotel.Speaker{B: true})
+			case "a_b":
+				this.evtSpeaker(rotel.Speaker{true, true})
+			default:
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
 		} else if value := reBalance.FindStringSubmatch(command); len(value) > 2 {
 			if v, err := strconv.ParseUint(value[2], 10, 32); err != nil {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
@@ -475,7 +485,7 @@ func (this *driver) parse(commands []string) error {
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
-		} else if value := reDimmer.FindStringSubmatch(command); len(value) > 2 {
+		} else if value := reDimmer.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseUint(value[1], 10, 32); err == nil {
 				this.evtDimmer(rotel.Dimmer(v))
 			} else {

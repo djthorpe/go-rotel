@@ -137,6 +137,17 @@ func (this *driver) evtDimmer(value rotel.Dimmer) {
 	}
 }
 
+func (this *driver) evtSpeaker(value rotel.Speaker) {
+	if this.state.Speaker != value {
+		this.state.Speaker = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_SPEAKER,
+			state:  this.state,
+		})
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // EVENT IMPLEMENTATION
 
