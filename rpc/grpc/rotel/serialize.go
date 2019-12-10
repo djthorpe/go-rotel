@@ -1,7 +1,11 @@
 package rotel
 
 import (
+	// Frameworks
+	gopi "github.com/djthorpe/gopi"
 	rotel "github.com/djthorpe/rotel"
+
+	// Protocol Buffers
 	pb "github.com/djthorpe/rotel/rpc/protobuf/rotel"
 )
 
@@ -10,13 +14,52 @@ import (
 
 type evt struct {
 	r *pb.RotelEvent
+	c gopi.RPCClientConn
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// EVENT IMPLEMENTATION
+
+func (this *evt) Source() gopi.Driver {
+	if this != nil {
+		return this.c
+	} else {
+		return nil
+	}
+}
+
+func (this *evt) Name() string {
+	return "RotelEvent"
+}
+
+func (this *evt) Type() rotel.EventType {
+	if this != nil {
+		return rotel.EventType(this.r.Type)
+	} else {
+		return rotel.EVENT_TYPE_NONE
+	}
+}
+
+func (this *evt) State() rotel.RotelState {
+	if this != nil {
+		return protoToState(this.r.State)
+	} else {
+		return rotel.RotelState{}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // TO PROTOBUF
 
 func protoFromEvent(evt rotel.RotelEvent) *pb.RotelEvent {
-	return &pb.RotelEvent{}
+	if evt == nil {
+		return nil
+	} else {
+		return &pb.RotelEvent{
+			Type:  pb.RotelEvent_Type(evt.Type()),
+			State: protoFromState(evt.State()),
+		}
+	}
 }
 
 func protoFromState(state rotel.RotelState) *pb.RotelState {
@@ -189,4 +232,12 @@ func protoToBalance(value pb.RotelState_Balance) rotel.Balance {
 
 func protoToCommand(value pb.RotelCommand_Command) rotel.Command {
 	return rotel.Command(value)
+}
+
+func protoToEvent(value *pb.RotelEvent, conn gopi.RPCClientConn) rotel.RotelEvent {
+	if value == nil {
+		return nil
+	} else {
+		return &evt{value, conn}
+	}
 }

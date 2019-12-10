@@ -83,6 +83,9 @@ type RotelClient interface {
 
 	// Send command
 	Send(Command) error
+
+	// Stream state changes
+	StreamEvents(events <-chan RotelEvent) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
