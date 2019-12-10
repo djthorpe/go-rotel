@@ -344,6 +344,37 @@ func (d Dimmer) String() string {
 	}
 }
 
+func (e EventType) String() string {
+	switch e {
+	case EVENT_TYPE_NONE:
+		return "EVENT_TYPE_NONE"
+	case EVENT_TYPE_POWER:
+		return "EVENT_TYPE_POWER"
+	case EVENT_TYPE_VOLUME:
+		return "EVENT_TYPE_VOLUME"
+	case EVENT_TYPE_SOURCE:
+		return "EVENT_TYPE_SOURCE"
+	case EVENT_TYPE_MUTE:
+		return "EVENT_TYPE_MUTE"
+	case EVENT_TYPE_FREQ:
+		return "EVENT_TYPE_FREQ"
+	case EVENT_TYPE_BYPASS:
+		return "EVENT_TYPE_BYPASS"
+	case EVENT_TYPE_BASS:
+		return "EVENT_TYPE_BASS"
+	case EVENT_TYPE_TREBLE:
+		return "EVENT_TYPE_TREBLE"
+	case EVENT_TYPE_BALANCE:
+		return "EVENT_TYPE_BALANCE"
+	case EVENT_TYPE_SPEAKER:
+		return "EVENT_TYPE_SPEAKER"
+	case EVENT_TYPE_DIMMER:
+		return "EVENT_TYPE_DIMMER"
+	default:
+		return "[?? Invalid EventType value]"
+	}
+}
+
 func (c Command) String() string {
 	switch c {
 	case ROTEL_COMMAND_NONE:

@@ -10,6 +10,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
@@ -18,7 +19,29 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func SendCommand(device rotel.Rotel, cmd string) error {
+	values := make([]string, 0, rotel.ROTEL_SOURCE_MAX)
+	for v := rotel.ROTEL_COMMAND_NONE + 1; v <= rotel.ROTEL_COMMAND_MAX; v++ {
+		str := strings.ToLower(strings.TrimPrefix(fmt.Sprint(v), "ROTEL_COMMAND_"))
+		if strings.ToLower(cmd) == str {
+			return device.Send(v)
+		} else {
+			values = append(values, str)
+		}
+	}
+	return fmt.Errorf("command should be one of: %v", strings.Join(values, ", "))
+}
+
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
+	if device, ok := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel); ok == false {
+		return fmt.Errorf("Invalid Rotel module")
+	} else {
+		for _, arg := range app.AppFlags.Args() {
+			if err := SendCommand(device, arg); err != nil {
+				return err
+			}
+		}
+	}
 
 	// Wait for CTRL+C
 	app.Logger.Info("Waiting for CTRL+C")
