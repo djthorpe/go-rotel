@@ -98,6 +98,7 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 				return err
 			}
 		}
+
 		// Commands
 		for _, arg := range app.AppFlags.Args() {
 			if err := SendCommand(device, arg); err != nil {

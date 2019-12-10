@@ -117,6 +117,76 @@ func protoToSource(value pb.RotelState_Source) rotel.Source {
 	return rotel.Source(value)
 }
 
+func protoToMute(value pb.RotelState_Mute) rotel.Mute {
+	switch value {
+	case pb.RotelState_MUTE_ON:
+		return rotel.ROTEL_MUTE_ON
+	case pb.RotelState_MUTE_OFF:
+		return rotel.ROTEL_MUTE_OFF
+	default:
+		return rotel.ROTEL_MUTE_NONE
+	}
+}
+
+func protoToTone(value pb.RotelState_Tone) rotel.Tone {
+	value_ := rotel.Tone(value)
+	switch {
+	case value_ == rotel.ROTEL_TONE_NONE:
+		return value_
+	case value_ < rotel.ROTEL_TONE_MAX:
+		return value_
+	case value_ == rotel.ROTEL_TONE_MAX:
+		return value_
+	default:
+		return rotel.ROTEL_TONE_NONE
+	}
+}
+
+func protoToSpeaker(value pb.RotelState_Speaker) rotel.Speaker {
+	switch value {
+	case pb.RotelState_SPEAKER_NONE:
+		return rotel.Speaker{true, true}
+	case pb.RotelState_SPEAKER_A:
+		return rotel.Speaker{A: true}
+	case pb.RotelState_SPEAKER_B:
+		return rotel.Speaker{B: true}
+	default:
+		return rotel.Speaker{false, false}
+	}
+}
+
+func protoToDimmer(value pb.RotelState_Dimmer) rotel.Dimmer {
+	value_ := rotel.Dimmer(value)
+	switch {
+	case value_ == rotel.ROTEL_DIMMER_NONE:
+		return value_
+	case value_ < rotel.ROTEL_DIMMER_MAX:
+		return value_
+	case value_ == rotel.ROTEL_DIMMER_MAX:
+		return value_
+	default:
+		return rotel.ROTEL_DIMMER_NONE
+	}
+}
+
+func protoToBalance(value pb.RotelState_Balance) rotel.Balance {
+	value_ := rotel.Balance(value)
+	switch {
+	case value_ == rotel.ROTEL_BALANCE_NONE:
+		return value_
+	case value_ == rotel.ROTEL_BALANCE_LEFT_MAX:
+		return value_
+	case value_ == rotel.ROTEL_BALANCE_RIGHT_MAX:
+		return value_
+	case value_ > rotel.ROTEL_BALANCE_LEFT_MAX:
+		return value_
+	case value_ < rotel.ROTEL_BALANCE_RIGHT_MAX:
+		return value_
+	default:
+		return rotel.ROTEL_BALANCE_NONE
+	}
+}
+
 func protoToCommand(value pb.RotelCommand_Command) rotel.Command {
 	return rotel.Command(value)
 }
