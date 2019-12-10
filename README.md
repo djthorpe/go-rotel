@@ -1,4 +1,4 @@
-# github.com/djthorpe/rotel
+# Rotel Amplifier Control
 
 This repository implements control for Rotel Audio Equipment with RS232 port,
 and has been tested only with the A12 integrated amplifer. There are two ways
@@ -77,7 +77,7 @@ Syntax: rotel-service <flags>...
 For example, fire up the service so communication is performed unencrypted on port 8080:
 
 ```bash
-bash# rotel-service -debug -rpc.port 8080 -verbose
+bash# rotel-service -rpc.port 8080 -verbose
 ```
 
 You can verify the service is working by adding the `-debug` flag when invoking it. You can then see all the communications between your amplifer and the service as it reads the current amplifier state.
@@ -116,9 +116,68 @@ The main features are:
   * The `Send()` method can be called to send commands, such as Play, Pause, Volume Up, and so forth;
   * The interface conforms to the `gopi.Publisher` interface, which provides methods to subscribe to events of type `RotelEvent`. Events are generated on amplifier state change.
 
-More informtion is forthcoming.
+An example application is provided in the `cmd/rotel-ctrl` folder and youcan build this with the following command:
 
-TODO
+```bash
+bash# make rotel-ctrl
+```
+
+This application has a `Main` function to send commands:
+
+```go
+
+func Main(app *gopi.AppInstance, done chan<- struct{}) error {
+  // Send command to toggle mute on/off
+  device := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel)
+	if err := device.Send(rotel.ROTEL_COMMAND_MUTE_TOGGLE); err != nil {
+    return err
+  }
+
+	// Wait for CTRL+C
+	app.Logger.Info("Waiting for CTRL+C")
+	app.WaitForSignal()
+
+	// Success
+	done <- gopi.DONE
+	return nil
+}
+
+```
+
+There is also a background `EventLoop` which listens for state changes:
+
+```go
+
+func EventLoop(app *gopi.AppInstance, ..., done <-chan struct{}) error {
+  device := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel)
+	evt := device.Subscribe()
+FOR_LOOP:
+	for {
+		select {
+		case <-done:
+			break FOR_LOOP
+		case event := <-evt:
+			fmt.Println(event)
+		}
+	}
+	device.Unsubscribe(evt)
+	return nil
+}
+```
+
+If you run the code and change the volume or other settings on the amplifier itself, you will see the changes reflected on your console. In order to use
+the Rotel module, the interface is imported as `github.com/djthorpe/rotel`
+into your code and you also need to anonymously import the module as follows:
+
+```go
+import (
+  // Interfaces
+  "github.com/djthorpe/rotel"
+
+  // Modules
+  _ "github.com/djthorpe/rotel/sys/rotel"
+)
+```
 
 ## Filing bugs and feature requests
 

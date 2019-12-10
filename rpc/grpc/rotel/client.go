@@ -10,11 +10,13 @@ package rotel
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	grpc "github.com/djthorpe/gopi-rpc/sys/grpc"
+	event "github.com/djthorpe/gopi/util/event"
 	rotel "github.com/djthorpe/rotel"
 
 	// Protocol buffers
@@ -28,13 +30,14 @@ import (
 type Client struct {
 	pb.RotelClient
 	conn gopi.RPCClientConn
+	event.Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func NewRotelClient(conn gopi.RPCClientConn) gopi.RPCClient {
-	return &Client{pb.NewRotelClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn}
+	return &Client{pb.NewRotelClient(conn.(grpc.GRPCClientConn).GRPCConn()), conn, event.Publisher{}}
 }
 
 func (this *Client) NewContext(timeout time.Duration) context.Context {
@@ -104,6 +107,46 @@ func (this *Client) Send(command rotel.Command) error {
 		return err
 	} else {
 		return nil
+	}
+}
+
+func (this *Client) StreamEvents(ctx context.Context) error {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	stream, err := this.RotelClient.StreamEvents(ctx, &empty.Empty{})
+	if err != nil {
+		return err
+	}
+
+	// Errors channel receives errors from recv
+	errors := make(chan error)
+	defer close(errors)
+
+	// Receive messages in the background
+	go func() {
+	FOR_LOOP:
+		for {
+			if evt_, err := stream.Recv(); err == io.EOF {
+				break FOR_LOOP
+			} else if err != nil {
+				errors <- err
+				break FOR_LOOP
+			} else if evt := protoToEvent(evt_, this.conn); evt != nil {
+				this.Emit(evt)
+			}
+		}
+		fmt.Println("StreamEvents: ENDED GOROUTINE")
+	}()
+
+	// Continue until error or io.EOF is returned
+	for {
+		select {
+		case err := <-errors:
+			return err
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 

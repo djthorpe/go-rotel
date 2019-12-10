@@ -16,10 +16,13 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 
 all: install
 
-install: rotel-service rotel-client
+install: rotel-service rotel-client rotel-ctrl
 
 protobuf:
 	$(GOGEN) -x ./rpc/...
+
+rotel-ctrl:
+	$(GOINSTALL) $(GOFLAGS) ./cmd/rotel-ctrl/...
 
 rotel-service: protobuf
 	$(GOINSTALL) $(GOFLAGS) ./cmd/rotel-service/...
