@@ -516,7 +516,7 @@ func (this *driver) retrieveparams() error {
 	case this.model == "":
 		return this.read("model")
 	case this.state.Power == rotel.ROTEL_POWER_NONE:
-		return this.read("model")
+		return this.read("power")
 	case this.state.Power != rotel.ROTEL_POWER_ON:
 		return nil
 	case this.state.Source == rotel.ROTEL_SOURCE_NONE:
