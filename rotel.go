@@ -10,6 +10,7 @@ package rotel
 
 import (
 	// Frameworks
+	"context"
 	"fmt"
 
 	"github.com/djthorpe/gopi"
@@ -73,6 +74,7 @@ type RotelState struct {
 
 type RotelClient interface {
 	gopi.RPCClient
+	gopi.Publisher
 
 	// Ping remote service
 	Ping() error
@@ -85,7 +87,7 @@ type RotelClient interface {
 	Send(Command) error
 
 	// Stream state changes
-	StreamEvents(events <-chan RotelEvent) error
+	StreamEvents(ctx context.Context) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////

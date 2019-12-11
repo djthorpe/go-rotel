@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -71,6 +72,22 @@ func SendCommand(stub rotel.RotelClient, value string) error {
 	return fmt.Errorf("command should be one of: %v", strings.Join(values, ", "))
 }
 
+func EventLoop(stub gopi.Publisher, done <-chan struct{}) {
+	evt := stub.Subscribe()
+FOR_LOOP:
+	for {
+		select {
+		case <-done:
+			break FOR_LOOP
+		case event := <-evt:
+			if evt_ := event.(rotel.RotelEvent); evt_ != nil && evt_.Type() != rotel.EVENT_TYPE_NONE {
+				fmt.Println(evt_.Type(), evt_.State())
+			}
+		}
+	}
+	stub.Unsubscribe(evt)
+}
+
 func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- struct{}) error {
 	// Get the client
 	if stub, err := app.ClientPool.NewClientEx("gopi.Rotel", services, gopi.RPC_FLAG_SERVICE_ANY); err != nil {
@@ -105,6 +122,24 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 				return err
 			}
 		}
+
+		// Watch
+		ctx, cancel := context.WithCancel(context.Background())
+		stop := make(chan struct{})
+		go func() {
+			if err := device.StreamEvents(ctx); err != nil && err != context.Canceled {
+				app.Logger.Error("Error: %v", err)
+			}
+			stop <- gopi.DONE
+		}()
+
+		// Print events in background as the occur
+		go EventLoop(device, stop)
+
+		// Wait for CTRL+C then cancel
+		app.Logger.Info("Press CTRL+C to exit")
+		app.WaitForSignal()
+		cancel()
 	}
 
 	// Success
