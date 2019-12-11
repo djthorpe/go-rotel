@@ -81,14 +81,14 @@ func (config Rotel) Open(logger gopi.Logger) (gopi.Driver, error) {
 	if config.TTY == "" {
 		return nil, gopi.ErrBadParameter
 	} else if _, err := os.Stat(config.TTY); os.IsNotExist(err) {
-		return nil, fmt.Errorf("TTY: %w", err)
+		return nil, fmt.Errorf("Open: %w", err)
 	} else {
 		this.tty = config.TTY
 	}
 
 	// Open term
 	if fd, err := term.Open(this.tty, term.Speed(int(config.BaudRate)), term.RawMode); err != nil {
-		return nil, fmt.Errorf("TTY: %w", err)
+		return nil, fmt.Errorf("Open: %w", err)
 	} else {
 		this.fd = fd
 	}
@@ -96,18 +96,7 @@ func (config Rotel) Open(logger gopi.Logger) (gopi.Driver, error) {
 	// Set term read timeout
 	if err := this.fd.SetReadTimeout(READ_TIMEOUT); err != nil {
 		defer this.fd.Close()
-		return nil, fmt.Errorf("TTY: %w", err)
-	}
-
-	// Set state to values which mean the state needs
-	// to be set from the amp
-	this.state = rotel.RotelState{
-		Mute:    rotel.ROTEL_MUTE_OTHER,
-		Source:  rotel.ROTEL_SOURCE_OTHER,
-		Treble:  rotel.ROTEL_TONE_OTHER,
-		Bass:    rotel.ROTEL_TONE_OTHER,
-		Balance: rotel.ROTEL_BALANCE_OTHER,
-		Dimmer:  rotel.ROTEL_DIMMER_OTHER,
+		return nil, fmt.Errorf("Open: %w", err)
 	}
 
 	// Start background thread
@@ -118,7 +107,7 @@ func (config Rotel) Open(logger gopi.Logger) (gopi.Driver, error) {
 }
 
 func (this *driver) Close() error {
-	this.log.Debug("<rotel.Close>{ tty=%v }", strconv.Quote(this.tty))
+	this.log.Debug("<rotel.Close>{ tty=%v state=%v }", strconv.Quote(this.tty), this.state)
 	this.Lock()
 	defer this.Unlock()
 
@@ -229,8 +218,6 @@ func (this *driver) setPower(value rotel.Power) error {
 		return this.write("power_on")
 	case rotel.ROTEL_POWER_STANDBY:
 		return this.write("power_off")
-	case rotel.ROTEL_POWER_TOGGLE:
-		return this.write("power_toggle")
 	default:
 		return gopi.ErrBadParameter
 	}
@@ -239,7 +226,7 @@ func (this *driver) setPower(value rotel.Power) error {
 func (this *driver) setVolume(value rotel.Volume) error {
 	this.log.Debug2("<rotel.SetVolume>{ %v }", value)
 
-	if value > rotel.ROTEL_VOLUME_MAX {
+	if value < rotel.ROTEL_VOLUME_MIN || value > rotel.ROTEL_VOLUME_MAX {
 		return gopi.ErrBadParameter
 	} else {
 		return this.write(fmt.Sprintf("vol_%d", value))
@@ -248,6 +235,7 @@ func (this *driver) setVolume(value rotel.Volume) error {
 
 func (this *driver) setSource(value rotel.Source) error {
 	this.log.Debug2("<rotel.setSource>{ %v }", value)
+
 	if str := sourceToString(value); str != "pc_usb" && str != "" {
 		return this.write(str)
 	} else if str == "pc_usb" {
@@ -265,21 +253,19 @@ func (this *driver) setMute(value rotel.Mute) error {
 		return this.write("mute_on")
 	case rotel.ROTEL_MUTE_OFF:
 		return this.write("mute_off")
-	case rotel.ROTEL_MUTE_TOGGLE:
-		return this.write("mute_toggle")
 	default:
 		return gopi.ErrBadParameter
 	}
 }
 
-func (this *driver) setBypass(value bool) error {
+func (this *driver) setBypass(value rotel.Bypass) error {
 	this.log.Debug2("<rotel.setBypass>{ %v }", value)
 
 	switch value {
-	case false:
-		return this.write("bypass_off")
-	case true:
+	case rotel.ROTEL_BYPASS_ON:
 		return this.write("bypass_on")
+	case rotel.ROTEL_BYPASS_OFF:
+		return this.write("bypass_off")
 	default:
 		return gopi.ErrBadParameter
 	}
@@ -288,24 +274,24 @@ func (this *driver) setBypass(value bool) error {
 func (this *driver) setBass(value rotel.Tone) error {
 	this.log.Debug2("<rotel.setBass>{ %v }", value)
 
-	if value < rotel.ROTEL_TONE_MIN || value > rotel.ROTEL_TONE_MAX {
-		return gopi.ErrBadParameter
-	} else if value == rotel.ROTEL_TONE_NONE {
+	if value >= rotel.ROTEL_TONE_MIN && value <= rotel.ROTEL_TONE_MAX {
+		return this.write(fmt.Sprintf("bass_%d", value))
+	} else if value == rotel.ROTEL_TONE_OFF {
 		return this.write("bass_000")
 	} else {
-		return this.write(fmt.Sprintf("bass_%d", value))
+		return gopi.ErrBadParameter
 	}
 }
 
 func (this *driver) setTreble(value rotel.Tone) error {
 	this.log.Debug2("<rotel.setTreble>{ %v }", value)
 
-	if value < rotel.ROTEL_TONE_MIN || value > rotel.ROTEL_TONE_MAX {
-		return gopi.ErrBadParameter
-	} else if value == rotel.ROTEL_TONE_NONE {
+	if value >= rotel.ROTEL_TONE_MIN && value <= rotel.ROTEL_TONE_MAX {
+		return this.write(fmt.Sprintf("treble_%d", value))
+	} else if value == rotel.ROTEL_TONE_OFF {
 		return this.write("treble_000")
 	} else {
-		return this.write(fmt.Sprintf("treble_%d", value))
+		return gopi.ErrBadParameter
 	}
 }
 
@@ -314,7 +300,7 @@ func (this *driver) setBalance(value rotel.Balance) error {
 
 	if value < rotel.ROTEL_BALANCE_LEFT_MAX || value > rotel.ROTEL_BALANCE_RIGHT_MAX {
 		return gopi.ErrBadParameter
-	} else if value == rotel.ROTEL_BALANCE_NONE {
+	} else if value == rotel.ROTEL_BALANCE_OFF {
 		return this.write("balance_000")
 	} else if value >= rotel.ROTEL_BALANCE_LEFT_MAX {
 		return this.write(fmt.Sprintf("balance_L%d", -value))
@@ -328,9 +314,9 @@ func (this *driver) setBalance(value rotel.Balance) error {
 func (this *driver) setDimmer(value rotel.Dimmer) error {
 	this.log.Debug2("<rotel.setDimmer>{ %v }", value)
 
-	if value == rotel.ROTEL_DIMMER_NONE {
+	if value == rotel.ROTEL_DIMMER_OFF {
 		return this.write("dimmer_0")
-	} else if value <= rotel.ROTEL_DIMMER_MAX {
+	} else if value >= rotel.ROTEL_DIMMER_MIN && value <= rotel.ROTEL_DIMMER_MAX {
 		return this.write(fmt.Sprintf("dimmer_%d", value))
 	} else {
 		return gopi.ErrBadParameter
@@ -421,15 +407,22 @@ func (this *driver) parse(commands []string) error {
 				this.evtSource(source)
 			} else {
 				this.evtSource(rotel.ROTEL_SOURCE_OTHER)
+				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reVolume.FindStringSubmatch(command); len(value) > 1 {
-			if v, err := strconv.ParseUint(value[1], 10, 32); err == nil && v >= 0 && v <= uint64(rotel.ROTEL_VOLUME_MAX) {
-				this.evtVolume(rotel.Volume(v))
+			if v, err := strconv.ParseUint(value[1], 10, 32); err == nil {
+				if v >= uint64(rotel.ROTEL_VOLUME_MIN) && v <= uint64(rotel.ROTEL_VOLUME_MAX) {
+					this.evtVolume(rotel.Volume(v))
+				}
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reFreq.FindStringSubmatch(command); len(value) > 1 {
-			this.evtFreq(value[1])
+			if value[1] == "" {
+				this.evtFreq("unknown")
+			} else {
+				this.evtFreq(value[1])
+			}
 		} else if value := reMute.FindStringSubmatch(command); len(value) > 1 {
 			switch value[1] {
 			case "on":
@@ -442,34 +435,42 @@ func (this *driver) parse(commands []string) error {
 		} else if value := reBypass.FindStringSubmatch(command); len(value) > 1 {
 			switch value[1] {
 			case "on":
-				this.evtBypass(true)
+				this.evtBypass(rotel.ROTEL_BYPASS_ON)
 			case "off":
-				this.evtBypass(false)
+				this.evtBypass(rotel.ROTEL_BYPASS_OFF)
 			default:
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reBass.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
-				this.evtBass(rotel.Tone(v))
+				if v == 0 {
+					this.evtBass(rotel.ROTEL_TONE_OFF)
+				} else if v >= int64(rotel.ROTEL_TONE_MIN) && v <= int64(rotel.ROTEL_TONE_MAX) {
+					this.evtBass(rotel.Tone(v))
+				}
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reTreble.FindStringSubmatch(command); len(value) > 1 {
 			if v, err := strconv.ParseInt(value[1], 10, 32); err == nil {
-				this.evtTreble(rotel.Tone(v))
+				if v == 0 {
+					this.evtTreble(rotel.ROTEL_TONE_OFF)
+				} else if v >= int64(rotel.ROTEL_TONE_MIN) && v <= int64(rotel.ROTEL_TONE_MAX) {
+					this.evtTreble(rotel.Tone(v))
+				}
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reSpeaker.FindStringSubmatch(command); len(value) > 1 {
 			switch value[1] {
 			case "off":
-				this.evtSpeaker(rotel.Speaker{false, false})
+				this.evtSpeaker(rotel.ROTEL_SPEAKER_OFF)
 			case "a":
-				this.evtSpeaker(rotel.Speaker{A: true})
+				this.evtSpeaker(rotel.ROTEL_SPEAKER_A)
 			case "b":
-				this.evtSpeaker(rotel.Speaker{B: true})
+				this.evtSpeaker(rotel.ROTEL_SPEAKER_B)
 			case "a_b":
-				this.evtSpeaker(rotel.Speaker{true, true})
+				this.evtSpeaker(rotel.ROTEL_SPEAKER_ALL)
 			default:
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
@@ -477,7 +478,7 @@ func (this *driver) parse(commands []string) error {
 			if v, err := strconv.ParseUint(value[2], 10, 32); err != nil {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			} else if value[1] == "" && v == 0 {
-				this.evtBalance(rotel.ROTEL_BALANCE_NONE)
+				this.evtBalance(rotel.ROTEL_BALANCE_OFF)
 			} else if value[1] == "L" && v > 0 && v <= uint64(-rotel.ROTEL_BALANCE_LEFT_MAX) {
 				this.evtBalance(rotel.Balance(-v))
 			} else if value[1] == "R" && v > 0 && v <= uint64(rotel.ROTEL_BALANCE_RIGHT_MAX) {
@@ -486,8 +487,13 @@ func (this *driver) parse(commands []string) error {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
 		} else if value := reDimmer.FindStringSubmatch(command); len(value) > 1 {
-			if v, err := strconv.ParseUint(value[1], 10, 32); err == nil {
-				this.evtDimmer(rotel.Dimmer(v))
+			if v_, err := strconv.ParseUint(value[1], 10, 32); err == nil {
+				v := rotel.Dimmer(v_)
+				if v == rotel.ROTEL_DIMMER_NONE {
+					this.evtDimmer(rotel.ROTEL_DIMMER_OFF)
+				} else if v >= rotel.ROTEL_DIMMER_MIN && v <= rotel.ROTEL_DIMMER_MAX {
+					this.evtDimmer(v)
+				}
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
 			}
@@ -504,33 +510,34 @@ func (this *driver) retrieveparams() error {
 	if this.fd == nil {
 		// If no file descriptor, do nothing
 		return nil
-	} else if this.model == "" {
+	}
+
+	switch {
+	case this.model == "":
 		return this.read("model")
-	} else if this.state.Power == rotel.ROTEL_POWER_NONE {
-		return this.read("power")
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Source == rotel.ROTEL_SOURCE_NONE {
-		if err := this.read("source"); err != nil {
-			return err
-		} else if err := this.read("freq"); err != nil {
-			return err
-		}
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Volume == rotel.ROTEL_VOLUME_NONE {
-		if err := this.read("volume"); err != nil {
-			return err
-		} else if err := this.read("bypass"); err != nil {
-			return err
-		} else if err := this.read("speaker"); err != nil {
-			return err
-		}
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Mute == rotel.ROTEL_MUTE_OTHER {
+	case this.state.Power == rotel.ROTEL_POWER_NONE:
+		return this.read("model")
+	case this.state.Power != rotel.ROTEL_POWER_ON:
+		return nil
+	case this.state.Source == rotel.ROTEL_SOURCE_NONE:
+		return this.read("source")
+	case this.state.Freq == "":
+		return this.read("freq")
+	case this.state.Volume == rotel.ROTEL_VOLUME_NONE:
+		return this.read("volume")
+	case this.state.Bypass == rotel.ROTEL_BYPASS_NONE:
+		return this.read("bypass")
+	case this.state.Speaker == rotel.ROTEL_SPEAKER_NONE:
+		return this.read("speaker")
+	case this.state.Mute == rotel.ROTEL_MUTE_NONE:
 		return this.read("mute")
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Bass == rotel.ROTEL_TONE_OTHER {
+	case this.state.Bass == rotel.ROTEL_TONE_NONE:
 		return this.read("bass")
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Treble == rotel.ROTEL_TONE_OTHER {
+	case this.state.Treble == rotel.ROTEL_TONE_NONE:
 		return this.read("treble")
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Balance == rotel.ROTEL_BALANCE_OTHER {
+	case this.state.Balance == rotel.ROTEL_BALANCE_NONE:
 		return this.read("balance")
-	} else if this.state.Power == rotel.ROTEL_POWER_ON && this.state.Dimmer == rotel.ROTEL_DIMMER_OTHER {
+	case this.state.Dimmer == rotel.ROTEL_DIMMER_NONE:
 		return this.read("dimmer")
 	}
 

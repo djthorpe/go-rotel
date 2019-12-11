@@ -76,8 +76,6 @@ func protoFromPower(value rotel.Power) pb.RotelState_Power {
 		return pb.RotelState_POWER_ON
 	case rotel.ROTEL_POWER_STANDBY:
 		return pb.RotelState_POWER_STANDBY
-	case rotel.ROTEL_POWER_TOGGLE:
-		return pb.RotelState_POWER_TOGGLE
 	default:
 		return pb.RotelState_POWER_NONE
 	}
@@ -129,11 +127,9 @@ func protoToState(proto *pb.RotelState) rotel.RotelState {
 			Source:  protoToSource(proto.Source),
 			Mute:    protoToMute(proto.Mute),
 			Freq:    proto.Freq,
-			Bypass:  proto.Bypass,
 			Bass:    protoToTone(proto.Bass),
 			Treble:  protoToTone(proto.Treble),
 			Balance: protoToBalance(proto.Balance),
-			Speaker: protoToSpeaker(proto.Speaker),
 			Dimmer:  protoToDimmer(proto.Dimmer),
 		}
 	}
@@ -145,8 +141,6 @@ func protoToPower(value pb.RotelState_Power) rotel.Power {
 		return rotel.ROTEL_POWER_ON
 	case pb.RotelState_POWER_STANDBY:
 		return rotel.ROTEL_POWER_STANDBY
-	case pb.RotelState_POWER_TOGGLE:
-		return rotel.ROTEL_POWER_TOGGLE
 	default:
 		return rotel.ROTEL_POWER_NONE
 	}
@@ -182,19 +176,6 @@ func protoToTone(value pb.RotelState_Tone) rotel.Tone {
 		return value_
 	default:
 		return rotel.ROTEL_TONE_NONE
-	}
-}
-
-func protoToSpeaker(value pb.RotelState_Speaker) rotel.Speaker {
-	switch value {
-	case pb.RotelState_SPEAKER_NONE:
-		return rotel.Speaker{true, true}
-	case pb.RotelState_SPEAKER_A:
-		return rotel.Speaker{A: true}
-	case pb.RotelState_SPEAKER_B:
-		return rotel.Speaker{B: true}
-	default:
-		return rotel.Speaker{false, false}
 	}
 }
 

@@ -82,7 +82,7 @@ func (this *driver) evtMute(value rotel.Mute) {
 	}
 }
 
-func (this *driver) evtBypass(value bool) {
+func (this *driver) evtBypass(value rotel.Bypass) {
 	if this.state.Bypass != value {
 		this.state.Bypass = value
 		this.Emit(&evt{

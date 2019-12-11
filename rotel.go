@@ -12,6 +12,7 @@ import (
 	// Frameworks
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/djthorpe/gopi"
 )
@@ -26,12 +27,12 @@ type (
 	Volume    uint16
 	Source    uint16
 	Mute      uint16
+	Bypass    uint16
 	Tone      int16
 	Balance   int16
 	Dimmer    uint16
+	Speaker   uint16
 )
-
-type Speaker struct{ A, B bool }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -63,8 +64,8 @@ type RotelState struct {
 	Volume
 	Mute
 	Source
-	Freq   string
-	Bypass bool
+	Freq string
+	Bypass
 	Treble Tone
 	Bass   Tone
 	Balance
@@ -97,17 +98,21 @@ const (
 	ROTEL_POWER_NONE Power = 0
 	ROTEL_POWER_ON   Power = iota
 	ROTEL_POWER_STANDBY
-	ROTEL_POWER_TOGGLE
-	ROTEL_POWER_MAX = ROTEL_POWER_TOGGLE
+	ROTEL_POWER_MAX = ROTEL_POWER_STANDBY
 )
 
 const (
 	ROTEL_MUTE_NONE Mute = 0
 	ROTEL_MUTE_ON   Mute = iota
 	ROTEL_MUTE_OFF
-	ROTEL_MUTE_TOGGLE
-	ROTEL_MUTE_OTHER
-	ROTEL_MUTE_MAX = ROTEL_MUTE_TOGGLE
+	ROTEL_MUTE_MAX = ROTEL_MUTE_OFF
+)
+
+const (
+	ROTEL_BYPASS_NONE Bypass = 0
+	ROTEL_BYPASS_ON   Bypass = iota
+	ROTEL_BYPASS_OFF
+	ROTEL_BYPASS_MAX = ROTEL_BYPASS_OFF
 )
 
 const (
@@ -130,27 +135,37 @@ const (
 
 const (
 	ROTEL_VOLUME_NONE Volume = 0
+	ROTEL_VOLUME_MIN  Volume = 1
 	ROTEL_VOLUME_MAX  Volume = 96
 )
 
 const (
-	ROTEL_TONE_NONE  Tone = 0
-	ROTEL_TONE_MIN   Tone = -100
-	ROTEL_TONE_MAX   Tone = 100
-	ROTEL_TONE_OTHER Tone = ROTEL_TONE_MAX + 1
+	ROTEL_SPEAKER_NONE Speaker = 0
+	ROTEL_SPEAKER_A    Speaker = iota
+	ROTEL_SPEAKER_B
+	ROTEL_SPEAKER_ALL
+	ROTEL_SPEAKER_OFF
+)
+
+const (
+	ROTEL_TONE_NONE Tone = 0
+	ROTEL_TONE_MIN  Tone = -100
+	ROTEL_TONE_MAX  Tone = 100
+	ROTEL_TONE_OFF  Tone = ROTEL_TONE_MAX + 1
 )
 
 const (
 	ROTEL_BALANCE_NONE      Balance = 0
 	ROTEL_BALANCE_LEFT_MAX  Balance = -15
 	ROTEL_BALANCE_RIGHT_MAX Balance = 15
-	ROTEL_BALANCE_OTHER     Balance = ROTEL_BALANCE_RIGHT_MAX + 1
+	ROTEL_BALANCE_OFF       Balance = ROTEL_BALANCE_RIGHT_MAX + 1
 )
 
 const (
-	ROTEL_DIMMER_NONE  Dimmer = 0
-	ROTEL_DIMMER_MAX   Dimmer = 9
-	ROTEL_DIMMER_OTHER Dimmer = ROTEL_DIMMER_MAX + 1
+	ROTEL_DIMMER_NONE Dimmer = 0
+	ROTEL_DIMMER_MIN  Dimmer = 1
+	ROTEL_DIMMER_MAX  Dimmer = 9
+	ROTEL_DIMMER_OFF  Dimmer = ROTEL_DIMMER_MAX + 1
 )
 
 const (
@@ -206,6 +221,44 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
+func (s RotelState) String() string {
+	parts := make([]string, 0, 10)
+	if s.Power != ROTEL_POWER_NONE {
+		parts = append(parts, fmt.Sprint(s.Power))
+	}
+	if s.Volume != ROTEL_VOLUME_NONE {
+		parts = append(parts, fmt.Sprint(s.Volume))
+	}
+	if s.Mute != ROTEL_MUTE_NONE {
+		parts = append(parts, fmt.Sprint(s.Mute))
+	}
+	if s.Source != ROTEL_SOURCE_NONE {
+		parts = append(parts, fmt.Sprint(s.Source))
+	}
+	if s.Freq != "" {
+		parts = append(parts, s.Freq)
+	}
+	if s.Bypass != ROTEL_BYPASS_NONE {
+		parts = append(parts, fmt.Sprint(s.Bypass))
+	}
+	if s.Treble != ROTEL_TONE_NONE {
+		parts = append(parts, fmt.Sprint(s.Treble))
+	}
+	if s.Bass != ROTEL_TONE_NONE {
+		parts = append(parts, fmt.Sprint(s.Bass))
+	}
+	if s.Balance != ROTEL_BALANCE_NONE {
+		parts = append(parts, fmt.Sprint(s.Balance))
+	}
+	if s.Speaker != ROTEL_SPEAKER_NONE {
+		parts = append(parts, fmt.Sprint(s.Speaker))
+	}
+	if s.Dimmer != ROTEL_DIMMER_NONE {
+		parts = append(parts, fmt.Sprint(s.Dimmer))
+	}
+	return fmt.Sprintf("<rotel.State>{ %v }", strings.Join(parts, " "))
+}
+
 func (p Power) String() string {
 	switch p {
 	case ROTEL_POWER_NONE:
@@ -214,10 +267,25 @@ func (p Power) String() string {
 		return "ROTEL_POWER_ON"
 	case ROTEL_POWER_STANDBY:
 		return "ROTEL_POWER_STANDBY"
-	case ROTEL_POWER_TOGGLE:
-		return "ROTEL_POWER_TOGGLE"
 	default:
 		return "[?? Invalid Power value]"
+	}
+}
+
+func (s Speaker) String() string {
+	switch s {
+	case ROTEL_SPEAKER_NONE:
+		return "ROTEL_SPEAKER_NONE"
+	case ROTEL_SPEAKER_A:
+		return "ROTEL_SPEAKER_A"
+	case ROTEL_SPEAKER_B:
+		return "ROTEL_SPEAKER_B"
+	case ROTEL_SPEAKER_ALL:
+		return "ROTEL_SPEAKER_ALL"
+	case ROTEL_SPEAKER_OFF:
+		return "ROTEL_SPEAKER_OFF"
+	default:
+		return "[?? Invalid Speaker value]"
 	}
 }
 
@@ -229,10 +297,6 @@ func (m Mute) String() string {
 		return "ROTEL_MUTE_ON"
 	case ROTEL_MUTE_OFF:
 		return "ROTEL_MUTE_OFF"
-	case ROTEL_MUTE_TOGGLE:
-		return "ROTEL_MUTE_TOGGLE"
-	case ROTEL_MUTE_OTHER:
-		return "ROTEL_MUTE_OTHER"
 	default:
 		return "[?? Invalid Mute value]"
 	}
@@ -243,7 +307,9 @@ func (v Volume) String() string {
 		return "ROTEL_VOLUME_NONE"
 	} else if v == ROTEL_VOLUME_MAX {
 		return "ROTEL_VOLUME_MAX"
-	} else if v < ROTEL_VOLUME_MAX {
+	} else if v == ROTEL_VOLUME_MIN {
+		return "ROTEL_VOLUME_MIN"
+	} else if v > ROTEL_VOLUME_MIN && v < ROTEL_VOLUME_MAX {
 		return fmt.Sprintf("ROTEL_VOLUME_%d", v)
 	} else {
 		return "[?? Invalid Volume value]"
@@ -258,8 +324,8 @@ func (t Tone) String() string {
 		return "ROTEL_TONE_MAX"
 	case t == ROTEL_TONE_MIN:
 		return "ROTEL_TONE_MIN"
-	case t == ROTEL_TONE_OTHER:
-		return "ROTEL_TONE_OTHER"
+	case t == ROTEL_TONE_OFF:
+		return "ROTEL_TONE_OFF"
 	case t >= ROTEL_TONE_MIN && t < ROTEL_TONE_NONE:
 		return fmt.Sprintf("ROTEL_TONE_MINUS_%d", -t)
 	case t <= ROTEL_TONE_MAX && t > ROTEL_TONE_NONE:
@@ -321,28 +387,17 @@ func (s Source) String() string {
 	}
 }
 
-func (s Speaker) String() string {
-	switch {
-	case s.A == true && s.B == false:
-		return "ROTEL_SPEAKER_A"
-	case s.B == true && s.A == false:
-		return "ROTEL_SPEAKER_B"
-	case s.B == true && s.A == true:
-		return "ROTEL_SPEAKER_BOTH"
-	default:
-		return "ROTEL_SPEAKER_NONE"
-	}
-}
-
 func (d Dimmer) String() string {
 	switch {
 	case d == ROTEL_DIMMER_NONE:
 		return "ROTEL_DIMMER_NONE"
 	case d == ROTEL_DIMMER_MAX:
 		return "ROTEL_DIMMER_MAX"
-	case d == ROTEL_DIMMER_OTHER:
-		return "ROTEL_DIMMER_OTHER"
-	case d > ROTEL_DIMMER_NONE && d <= ROTEL_DIMMER_MAX:
+	case d == ROTEL_DIMMER_MIN:
+		return "ROTEL_DIMMER_MIN"
+	case d == ROTEL_DIMMER_OFF:
+		return "ROTEL_DIMMER_OFF"
+	case d > ROTEL_DIMMER_MIN && d < ROTEL_DIMMER_MAX:
 		return fmt.Sprintf("ROTEL_DIMMER_%d", d)
 	default:
 		return "[?? Invalid Dimmer value]"
