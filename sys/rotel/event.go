@@ -148,6 +148,17 @@ func (this *driver) evtSpeaker(value rotel.Speaker) {
 	}
 }
 
+func (this *driver) evtUpdate(value rotel.Update) {
+	if this.state.Update != value {
+		this.state.Update = value
+		this.Emit(&evt{
+			source: this,
+			typ:    rotel.EVENT_TYPE_UPDATE,
+			state:  this.state,
+		})
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // EVENT IMPLEMENTATION
 
@@ -191,6 +202,8 @@ func (this *evt) String() string {
 		return fmt.Sprintf("<rotel.Event>{ type=%v speaker=%v }", this.typ, this.state.Speaker)
 	case rotel.EVENT_TYPE_DIMMER:
 		return fmt.Sprintf("<rotel.Event>{ type=%v dimmer=%v }", this.typ, this.state.Dimmer)
+	case rotel.EVENT_TYPE_UPDATE:
+		return fmt.Sprintf("<rotel.Event>{ type=%v update=%v }", this.typ, this.state.Update)
 	default:
 		return fmt.Sprintf("<rotel.Event>{ type=%v }", this.typ)
 	}

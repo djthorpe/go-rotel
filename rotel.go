@@ -9,11 +9,12 @@
 package rotel
 
 import (
-	// Frameworks
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
 )
 
@@ -32,6 +33,7 @@ type (
 	Balance   int16
 	Dimmer    uint16
 	Speaker   uint16
+	Update    uint16
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,6 +73,7 @@ type RotelState struct {
 	Balance
 	Speaker
 	Dimmer
+	Update
 }
 
 type RotelClient interface {
@@ -169,6 +172,13 @@ const (
 )
 
 const (
+	ROTEL_UPDATE_NONE   Update = 0
+	ROTEL_UPDATE_MANUAL Update = 1
+	ROTEL_UPDATE_AUTO   Update = 2
+	ROTEL_UPDATE_OTHER  Update = 3
+)
+
+const (
 	ROTEL_COMMAND_NONE Command = 0
 	ROTEL_COMMAND_PLAY Command = iota
 	ROTEL_COMMAND_STOP
@@ -198,9 +208,7 @@ const (
 	ROTEL_COMMAND_SPEAKER_B_ON
 	ROTEL_COMMAND_SPEAKER_B_OFF
 	ROTEL_COMMAND_DIMMER_TOGGLE
-	ROTEL_COMMAND_RS232_UPDATE_ON
-	ROTEL_COMMAND_RS232_UPDATE_OFF
-	ROTEL_COMMAND_MAX = ROTEL_COMMAND_RS232_UPDATE_OFF
+	ROTEL_COMMAND_MAX = ROTEL_COMMAND_DIMMER_TOGGLE
 )
 
 const (
@@ -216,6 +224,7 @@ const (
 	EVENT_TYPE_BALANCE
 	EVENT_TYPE_SPEAKER
 	EVENT_TYPE_DIMMER
+	EVENT_TYPE_UPDATE
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -224,39 +233,42 @@ const (
 func (s RotelState) String() string {
 	parts := make([]string, 0, 10)
 	if s.Power != ROTEL_POWER_NONE {
-		parts = append(parts, fmt.Sprint(s.Power))
+		parts = append(parts, " power=", strings.TrimPrefix(fmt.Sprint(s.Power), "ROTEL_POWER_"))
 	}
 	if s.Volume != ROTEL_VOLUME_NONE {
-		parts = append(parts, fmt.Sprint(s.Volume))
+		parts = append(parts, " volume=", strings.TrimPrefix(fmt.Sprint(s.Volume), "ROTEL_VOLUME_"))
 	}
 	if s.Mute != ROTEL_MUTE_NONE {
-		parts = append(parts, fmt.Sprint(s.Mute))
+		parts = append(parts, " mute=", strings.TrimPrefix(fmt.Sprint(s.Mute), "ROTEL_MUTE_"))
 	}
 	if s.Source != ROTEL_SOURCE_NONE {
-		parts = append(parts, fmt.Sprint(s.Source))
+		parts = append(parts, " source=", strings.TrimPrefix(fmt.Sprint(s.Source), "ROTEL_SOURCE_"))
 	}
 	if s.Freq != "" {
-		parts = append(parts, s.Freq)
+		parts = append(parts, " freq=", strconv.Quote(s.Freq))
 	}
 	if s.Bypass != ROTEL_BYPASS_NONE {
-		parts = append(parts, fmt.Sprint(s.Bypass))
-	}
-	if s.Treble != ROTEL_TONE_NONE {
-		parts = append(parts, fmt.Sprint(s.Treble))
+		parts = append(parts, " bypass=", strings.TrimPrefix(fmt.Sprint(s.Bypass), "ROTEL_BYPASS_"))
 	}
 	if s.Bass != ROTEL_TONE_NONE {
-		parts = append(parts, fmt.Sprint(s.Bass))
+		parts = append(parts, " bass=", strings.TrimPrefix(fmt.Sprint(s.Bass), "ROTEL_TONE_"))
+	}
+	if s.Treble != ROTEL_TONE_NONE {
+		parts = append(parts, " treble=", strings.TrimPrefix(fmt.Sprint(s.Treble), "ROTEL_TONE_"))
 	}
 	if s.Balance != ROTEL_BALANCE_NONE {
-		parts = append(parts, fmt.Sprint(s.Balance))
+		parts = append(parts, " balance=", strings.TrimPrefix(fmt.Sprint(s.Balance), "ROTEL_BALANCE_"))
 	}
 	if s.Speaker != ROTEL_SPEAKER_NONE {
-		parts = append(parts, fmt.Sprint(s.Speaker))
+		parts = append(parts, " speaker=", strings.TrimPrefix(fmt.Sprint(s.Speaker), "ROTEL_SPEAKER_"))
 	}
 	if s.Dimmer != ROTEL_DIMMER_NONE {
-		parts = append(parts, fmt.Sprint(s.Dimmer))
+		parts = append(parts, " dimmer=", strings.TrimPrefix(fmt.Sprint(s.Dimmer), "ROTEL_DIMMER_"))
 	}
-	return fmt.Sprintf("<rotel.State>{ %v }", strings.Join(parts, " "))
+	if s.Update != ROTEL_UPDATE_NONE {
+		parts = append(parts, " update=", strings.TrimPrefix(fmt.Sprint(s.Update), "ROTEL_UPDATE_"))
+	}
+	return fmt.Sprintf("<rotel.State>{ %v }", strings.TrimSpace(strings.Join(parts, "")))
 }
 
 func (p Power) String() string {
@@ -353,6 +365,8 @@ func (b Balance) String() string {
 	switch {
 	case b == ROTEL_BALANCE_NONE:
 		return "ROTEL_BALANCE_NONE"
+	case b == ROTEL_BALANCE_OFF:
+		return "ROTEL_BALANCE_OFF"
 	case b == ROTEL_BALANCE_LEFT_MAX:
 		return "ROTEL_BALANCE_LEFT_MAX"
 	case b == ROTEL_BALANCE_RIGHT_MAX:
@@ -362,7 +376,7 @@ func (b Balance) String() string {
 	case b <= ROTEL_BALANCE_RIGHT_MAX && b > ROTEL_BALANCE_NONE:
 		return fmt.Sprintf("ROTEL_BALANCE_RIGHT_%d", b)
 	default:
-		return "[?? Invalid Balance value]"
+		return fmt.Sprintf("[?? Invalid Balance value (%v) ]", b)
 	}
 }
 
@@ -418,6 +432,19 @@ func (d Dimmer) String() string {
 	}
 }
 
+func (u Update) String() string {
+	switch u {
+	case ROTEL_UPDATE_NONE:
+		return "ROTEL_UPDATE_NONE"
+	case ROTEL_UPDATE_MANUAL:
+		return "ROTEL_UPDATE_MANUAL"
+	case ROTEL_UPDATE_AUTO:
+		return "ROTEL_UPDATE_AUTO"
+	default:
+		return "[?? Invalid Update value]"
+	}
+}
+
 func (e EventType) String() string {
 	switch e {
 	case EVENT_TYPE_NONE:
@@ -444,6 +471,8 @@ func (e EventType) String() string {
 		return "EVENT_TYPE_SPEAKER"
 	case EVENT_TYPE_DIMMER:
 		return "EVENT_TYPE_DIMMER"
+	case EVENT_TYPE_UPDATE:
+		return "EVENT_TYPE_UPDATE"
 	default:
 		return "[?? Invalid EventType value]"
 	}
@@ -509,10 +538,6 @@ func (c Command) String() string {
 		return "ROTEL_COMMAND_SPEAKER_B_OFF"
 	case ROTEL_COMMAND_DIMMER_TOGGLE:
 		return "ROTEL_COMMAND_DIMMER_TOGGLE"
-	case ROTEL_COMMAND_RS232_UPDATE_ON:
-		return "ROTEL_COMMAND_RS232_UPDATE_ON"
-	case ROTEL_COMMAND_RS232_UPDATE_OFF:
-		return "ROTEL_COMMAND_RS232_UPDATE_OFF"
 	default:
 		return "[?? Invalid Command value]"
 	}

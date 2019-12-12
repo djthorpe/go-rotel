@@ -66,6 +66,7 @@ var (
 	reBypass  = regexp.MustCompile("^bypass=(on|off)$")
 	reSpeaker = regexp.MustCompile("^speaker=(a|b|a_b|off)$")
 	reDimmer  = regexp.MustCompile("^dimmer=(\\d+)$")
+	reUpdate  = regexp.MustCompile("^update_mode=(auto|manual)$")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -208,6 +209,11 @@ func (this *driver) Set(state rotel.RotelState) error {
 			return fmt.Errorf("setDimmer: %w", err)
 		}
 	}
+	if state.Update != this.state.Update {
+		if err := this.setUpdate(state.Update); err != nil {
+			return fmt.Errorf("setUpdate: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -327,6 +333,18 @@ func (this *driver) setDimmer(value rotel.Dimmer) error {
 	}
 }
 
+func (this *driver) setUpdate(value rotel.Update) error {
+	this.log.Debug2("<rotel.setUpdate>{ %v }", value)
+
+	if value == rotel.ROTEL_UPDATE_MANUAL {
+		return this.write("rs232_update_off")
+	} else if value == rotel.ROTEL_UPDATE_AUTO {
+		return this.write("rs232_update_on")
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // SEND COMMAND
 
@@ -370,8 +388,6 @@ func (this *driver) Send(value rotel.Command) error {
 		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_DIMMER_TOGGLE:
 		return this.write("dimmer")
-	case rotel.ROTEL_COMMAND_RS232_UPDATE_ON, rotel.ROTEL_COMMAND_RS232_UPDATE_OFF:
-		return this.write(strings.ToLower(str))
 	default:
 		return gopi.ErrBadParameter
 	}
@@ -500,6 +516,15 @@ func (this *driver) parse(commands []string) error {
 				}
 			} else {
 				return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
+			}
+		} else if value := reUpdate.FindStringSubmatch(command); len(value) > 1 {
+			switch value[1] {
+			case "auto":
+				this.evtUpdate(rotel.ROTEL_UPDATE_AUTO)
+			case "manual":
+				this.evtUpdate(rotel.ROTEL_UPDATE_MANUAL)
+			default:
+				this.evtUpdate(rotel.ROTEL_UPDATE_OTHER)
 			}
 		} else {
 			return fmt.Errorf("Cannot parse: %v", strconv.Quote(command))
