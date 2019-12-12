@@ -75,6 +75,7 @@ func protoFromState(state rotel.RotelState) *pb.RotelState {
 		Balance: protoFromBalance(state.Balance),
 		Speaker: protoFromSpeaker(state.Speaker),
 		Dimmer:  protoFromDimmer(state.Dimmer),
+		Update:  protoFromUpdate(state.Update),
 	}
 }
 
@@ -190,6 +191,17 @@ func protoFromDimmer(value rotel.Dimmer) pb.RotelState_Dimmer {
 	}
 }
 
+func protoFromUpdate(value rotel.Update) pb.RotelState_Update {
+	switch value {
+	case rotel.ROTEL_UPDATE_MANUAL:
+		return pb.RotelState_UPDATE_MANUAL
+	case rotel.ROTEL_UPDATE_AUTO:
+		return pb.RotelState_UPDATE_AUTO
+	default:
+		return pb.RotelState_UPDATE_NONE
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // FROM PROTOBUF
 
@@ -209,6 +221,7 @@ func protoToState(proto *pb.RotelState) rotel.RotelState {
 			Balance: protoToBalance(proto.Balance),
 			Speaker: protoToSpeaker(proto.Speaker),
 			Dimmer:  protoToDimmer(proto.Dimmer),
+			Update:  protoToUpdate(proto.Update),
 		}
 	}
 }
@@ -250,6 +263,10 @@ func protoToTone(value pb.RotelState_Tone) rotel.Tone {
 
 func protoToDimmer(value pb.RotelState_Dimmer) rotel.Dimmer {
 	return rotel.Dimmer(value)
+}
+
+func protoToUpdate(value pb.RotelState_Update) rotel.Update {
+	return rotel.Update(value)
 }
 
 func protoToBalance(value pb.RotelState_Balance) rotel.Balance {

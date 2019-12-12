@@ -148,6 +148,7 @@ message RotelCommand {
         COMMAND_SPEAKER_A_TOGGLE = 18;
         COMMAND_SPEAKER_B_TOGGLE = 19;
         COMMAND_DIMMER_TOGGLE = 20;
+        COMMAND_POWER_TOGGLE = 21;
     }
     Command command = 1;
 }

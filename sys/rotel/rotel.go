@@ -169,53 +169,53 @@ func (this *driver) Set(state rotel.RotelState) error {
 			return nil
 		}
 	}
-	if state.Volume != this.state.Volume {
+	if state.Volume != rotel.ROTEL_VOLUME_NONE && state.Volume != this.state.Volume {
 		this.log.Debug("current vol=%v set new vol=%v", this.state.Volume, state.Volume)
 		if err := this.setVolume(state.Volume); err != nil {
 			return fmt.Errorf("setVolume: %w", err)
 		}
 	}
-	if state.Source != this.state.Source {
+	if state.Source != rotel.ROTEL_SOURCE_NONE && state.Source != this.state.Source {
 		if err := this.setSource(state.Source); err != nil {
 			return fmt.Errorf("setSource: %w", err)
 		}
 	}
-	if state.Mute != this.state.Mute {
+	if state.Mute != rotel.ROTEL_MUTE_NONE && state.Mute != this.state.Mute {
 		if err := this.setMute(state.Mute); err != nil {
 			return fmt.Errorf("setMute: %w", err)
 		}
 	}
-	if state.Bypass != this.state.Bypass {
+	if state.Bypass != rotel.ROTEL_BYPASS_NONE && state.Bypass != this.state.Bypass {
 		if err := this.setBypass(state.Bypass); err != nil {
 			return fmt.Errorf("setBypass: %w", err)
 		}
 	}
-	if state.Treble != this.state.Treble {
+	if state.Treble != rotel.ROTEL_TONE_NONE && state.Treble != this.state.Treble {
 		if err := this.setTreble(state.Treble); err != nil {
 			return fmt.Errorf("setTreble: %w", err)
 		}
 	}
-	if state.Bass != this.state.Bass {
+	if state.Bass != rotel.ROTEL_TONE_NONE && state.Bass != this.state.Bass {
 		if err := this.setBass(state.Bass); err != nil {
 			return fmt.Errorf("setBass: %w", err)
 		}
 	}
-	if state.Balance != this.state.Balance {
+	if state.Balance != rotel.ROTEL_BALANCE_NONE && state.Balance != this.state.Balance {
 		if err := this.setBalance(state.Balance); err != nil {
 			return fmt.Errorf("setBalance: %w", err)
 		}
 	}
-	if state.Dimmer != this.state.Dimmer {
+	if state.Dimmer != rotel.ROTEL_DIMMER_NONE && state.Dimmer != this.state.Dimmer {
 		if err := this.setDimmer(state.Dimmer); err != nil {
 			return fmt.Errorf("setDimmer: %w", err)
 		}
 	}
-	if state.Update != this.state.Update {
+	if state.Update != rotel.ROTEL_UPDATE_NONE && state.Update != this.state.Update {
 		if err := this.setUpdate(state.Update); err != nil {
 			return fmt.Errorf("setUpdate: %w", err)
 		}
 	}
-	if state.Speaker != this.state.Speaker {
+	if state.Speaker != rotel.ROTEL_SPEAKER_NONE && state.Speaker != this.state.Speaker {
 		if err := this.setSpeaker(state.Speaker); err != nil {
 			return fmt.Errorf("setSpeaker: %w", err)
 		}
@@ -429,6 +429,8 @@ func (this *driver) Send(value rotel.Command) error {
 		return this.write("speaker_b")
 	case rotel.ROTEL_COMMAND_DIMMER_TOGGLE:
 		return this.write("dimmer")
+	case rotel.ROTEL_COMMAND_POWER_TOGGLE:
+		return this.write("power_toggle")
 	default:
 		return gopi.ErrBadParameter
 	}

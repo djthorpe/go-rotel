@@ -25,8 +25,10 @@ func SetPower(stub rotel.RotelClient, value string) error {
 		return stub.Set(rotel.RotelState{
 			Power: rotel.ROTEL_POWER_STANDBY,
 		})
+	case "toggle":
+		return stub.Send(rotel.ROTEL_COMMAND_POWER_TOGGLE)
 	default:
-		return fmt.Errorf("-power value should be on, standby or off")
+		return fmt.Errorf("-power value should be on, standby, off or toggle")
 	}
 }
 
