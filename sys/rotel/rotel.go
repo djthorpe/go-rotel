@@ -163,6 +163,10 @@ func (this *driver) Set(state rotel.RotelState) error {
 		if err := this.setPower(state.Power); err != nil {
 			return fmt.Errorf("setPower: %w", err)
 		}
+		if this.state.Power == rotel.ROTEL_POWER_ON {
+			// Power switching off so ignore other parameters
+			return nil
+		}
 	}
 	if state.Volume != this.state.Volume {
 		if err := this.setVolume(state.Volume); err != nil {
