@@ -53,44 +53,56 @@ message RotelState {
         POWER_NONE = 0;
         POWER_ON = 1;
         POWER_STANDBY = 2;
-        POWER_TOGGLE = 3;
     }
     enum Source {
-        INPUT_NONE = 0;
-        INPUT_CD = 1;
-        INPUT_COAX1 = 2;
-        INPUT_COAX2 = 3;
-        INPUT_OPT1 = 4;
-        INPUT_OPT2 = 5;
-        INPUT_AUX1 = 6;
-        INPUT_AUX2 = 7;
-        INPUT_TUNER = 8;
-        INPUT_PHONO = 9;
-        INPUT_USB = 10;
-        INPUT_BLUETOOTH = 11;
-        INPUT_PC_USB = 12;
+        SOURCE_NONE = 0;
+        SOURCE_CD = 1;
+        SOURCE_COAX1 = 2;
+        SOURCE_COAX2 = 3;
+        SOURCE_OPT1 = 4;
+        SOURCE_OPT2 = 5;
+        SOURCE_AUX1 = 6;
+        SOURCE_AUX2 = 7;
+        SOURCE_TUNER = 8;
+        SOURCE_PHONO = 9;
+        SOURCE_USB = 10;
+        SOURCE_BLUETOOTH = 11;
+        SOURCE_PC_USB = 12;
+        SOURCE_OTHER = 13;
     }
     enum Volume {
         VOLUME_NONE = 0;
     }
     enum Mute {
-        MUTE_OFF = 0;
-        MUTE_ON = 1;
+        MUTE_NONE = 0;
+        MUTE_OFF = 1;
+        MUTE_ON = 2;
+    }
+    enum Bypass {
+        BYPASS_NONE = 0;
+        BYPASS_ON = 1;
+        BYPASS_OFF = 2;
     }
     enum Tone {
         TONE_NONE = 0;
+        TONE_OFF = 101;
     }
     enum Balance {
         BALANCE_NONE = 0;
+        BALANCE_OFF = 16;
     }
     enum Speaker {
         SPEAKER_NONE = 0;
         SPEAKER_A = 1;
         SPEAKER_B = 2;
         SPEAKER_ALL = 3;
+        SPEAKER_OFF = 4;
     }
     enum Dimmer {
-        DIMMER_NONE = 0;        
+        DIMMER_NONE = 0;      
+        DIMMER_MIN = 1;
+        DIMMER_MAX = 9;
+        DIMMER_OFF = 10;  
     }
 
     Power power = 1;
@@ -98,7 +110,7 @@ message RotelState {
     Source source = 3;
     Mute mute = 4;
     string Freq = 5;
-    bool bypass = 6;
+    Bypass bypass = 6;
     Tone bass = 7;
     Tone treble = 8;
     Balance balance = 9;

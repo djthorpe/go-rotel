@@ -289,6 +289,20 @@ func (s Speaker) String() string {
 	}
 }
 
+func (b Bypass) String() string {
+	switch b {
+	case ROTEL_BYPASS_NONE:
+		return "ROTEL_BYPASS_NONE"
+	case ROTEL_BYPASS_ON:
+		return "ROTEL_BYPASS_ON"
+	case ROTEL_BYPASS_OFF:
+		return "ROTEL_BYPASS_OFF"
+	default:
+		return "[?? Invalid Bypass value ]"
+	}
+
+}
+
 func (m Mute) String() string {
 	switch m {
 	case ROTEL_MUTE_NONE:
