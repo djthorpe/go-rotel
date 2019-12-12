@@ -9,9 +9,12 @@
 package rotel
 
 import (
-	// Frameworks
+	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
 )
 
@@ -25,12 +28,13 @@ type (
 	Volume    uint16
 	Source    uint16
 	Mute      uint16
+	Bypass    uint16
 	Tone      int16
 	Balance   int16
 	Dimmer    uint16
+	Speaker   uint16
+	Update    uint16
 )
-
-type Speaker struct{ A, B bool }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -62,17 +66,19 @@ type RotelState struct {
 	Volume
 	Mute
 	Source
-	Freq   string
-	Bypass bool
+	Freq string
+	Bypass
 	Treble Tone
 	Bass   Tone
 	Balance
 	Speaker
 	Dimmer
+	Update
 }
 
 type RotelClient interface {
 	gopi.RPCClient
+	gopi.Publisher
 
 	// Ping remote service
 	Ping() error
@@ -85,7 +91,7 @@ type RotelClient interface {
 	Send(Command) error
 
 	// Stream state changes
-	StreamEvents(events <-chan RotelEvent) error
+	StreamEvents(ctx context.Context) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,17 +101,21 @@ const (
 	ROTEL_POWER_NONE Power = 0
 	ROTEL_POWER_ON   Power = iota
 	ROTEL_POWER_STANDBY
-	ROTEL_POWER_TOGGLE
-	ROTEL_POWER_MAX = ROTEL_POWER_TOGGLE
+	ROTEL_POWER_MAX = ROTEL_POWER_STANDBY
 )
 
 const (
 	ROTEL_MUTE_NONE Mute = 0
 	ROTEL_MUTE_ON   Mute = iota
 	ROTEL_MUTE_OFF
-	ROTEL_MUTE_TOGGLE
-	ROTEL_MUTE_OTHER
-	ROTEL_MUTE_MAX = ROTEL_MUTE_TOGGLE
+	ROTEL_MUTE_MAX = ROTEL_MUTE_OFF
+)
+
+const (
+	ROTEL_BYPASS_NONE Bypass = 0
+	ROTEL_BYPASS_ON   Bypass = iota
+	ROTEL_BYPASS_OFF
+	ROTEL_BYPASS_MAX = ROTEL_BYPASS_OFF
 )
 
 const (
@@ -128,27 +138,44 @@ const (
 
 const (
 	ROTEL_VOLUME_NONE Volume = 0
+	ROTEL_VOLUME_MIN  Volume = 1
 	ROTEL_VOLUME_MAX  Volume = 96
 )
 
 const (
-	ROTEL_TONE_NONE  Tone = 0
-	ROTEL_TONE_MIN   Tone = -100
-	ROTEL_TONE_MAX   Tone = 100
-	ROTEL_TONE_OTHER Tone = ROTEL_TONE_MAX + 1
+	ROTEL_SPEAKER_NONE Speaker = 0
+	ROTEL_SPEAKER_A    Speaker = iota
+	ROTEL_SPEAKER_B
+	ROTEL_SPEAKER_ALL
+	ROTEL_SPEAKER_OFF
+)
+
+const (
+	ROTEL_TONE_NONE Tone = 0
+	ROTEL_TONE_MIN  Tone = -100
+	ROTEL_TONE_MAX  Tone = 100
+	ROTEL_TONE_OFF  Tone = ROTEL_TONE_MAX + 1
 )
 
 const (
 	ROTEL_BALANCE_NONE      Balance = 0
 	ROTEL_BALANCE_LEFT_MAX  Balance = -15
 	ROTEL_BALANCE_RIGHT_MAX Balance = 15
-	ROTEL_BALANCE_OTHER     Balance = ROTEL_BALANCE_RIGHT_MAX + 1
+	ROTEL_BALANCE_OFF       Balance = ROTEL_BALANCE_RIGHT_MAX + 1
 )
 
 const (
-	ROTEL_DIMMER_NONE  Dimmer = 0
-	ROTEL_DIMMER_MAX   Dimmer = 9
-	ROTEL_DIMMER_OTHER Dimmer = ROTEL_DIMMER_MAX + 1
+	ROTEL_DIMMER_NONE Dimmer = 0
+	ROTEL_DIMMER_MIN  Dimmer = 1
+	ROTEL_DIMMER_MAX  Dimmer = 9
+	ROTEL_DIMMER_OFF  Dimmer = ROTEL_DIMMER_MAX + 1
+)
+
+const (
+	ROTEL_UPDATE_NONE   Update = 0
+	ROTEL_UPDATE_MANUAL Update = 1
+	ROTEL_UPDATE_AUTO   Update = 2
+	ROTEL_UPDATE_OTHER  Update = 3
 )
 
 const (
@@ -158,13 +185,9 @@ const (
 	ROTEL_COMMAND_PAUSE
 	ROTEL_COMMAND_TRACK_NEXT
 	ROTEL_COMMAND_TRACK_PREV
-	ROTEL_COMMAND_MUTE_OFF
-	ROTEL_COMMAND_MUTE_ON
 	ROTEL_COMMAND_MUTE_TOGGLE
 	ROTEL_COMMAND_VOL_UP
 	ROTEL_COMMAND_VOL_DOWN
-	ROTEL_COMMAND_BYPASS_OFF
-	ROTEL_COMMAND_BYPASS_ON
 	ROTEL_COMMAND_BASS_UP
 	ROTEL_COMMAND_BASS_DOWN
 	ROTEL_COMMAND_BASS_RESET
@@ -176,14 +199,9 @@ const (
 	ROTEL_COMMAND_BALANCE_RESET
 	ROTEL_COMMAND_SPEAKER_A_TOGGLE
 	ROTEL_COMMAND_SPEAKER_B_TOGGLE
-	ROTEL_COMMAND_SPEAKER_A_ON
-	ROTEL_COMMAND_SPEAKER_A_OFF
-	ROTEL_COMMAND_SPEAKER_B_ON
-	ROTEL_COMMAND_SPEAKER_B_OFF
 	ROTEL_COMMAND_DIMMER_TOGGLE
-	ROTEL_COMMAND_RS232_UPDATE_ON
-	ROTEL_COMMAND_RS232_UPDATE_OFF
-	ROTEL_COMMAND_MAX = ROTEL_COMMAND_RS232_UPDATE_OFF
+	ROTEL_COMMAND_POWER_TOGGLE
+	ROTEL_COMMAND_MAX = ROTEL_COMMAND_POWER_TOGGLE
 )
 
 const (
@@ -199,10 +217,52 @@ const (
 	EVENT_TYPE_BALANCE
 	EVENT_TYPE_SPEAKER
 	EVENT_TYPE_DIMMER
+	EVENT_TYPE_UPDATE
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
+
+func (s RotelState) String() string {
+	parts := make([]string, 0, 10)
+	if s.Power != ROTEL_POWER_NONE {
+		parts = append(parts, " power=", strings.TrimPrefix(fmt.Sprint(s.Power), "ROTEL_POWER_"))
+	}
+	if s.Volume != ROTEL_VOLUME_NONE {
+		parts = append(parts, " volume=", strings.TrimPrefix(fmt.Sprint(s.Volume), "ROTEL_VOLUME_"))
+	}
+	if s.Mute != ROTEL_MUTE_NONE {
+		parts = append(parts, " mute=", strings.TrimPrefix(fmt.Sprint(s.Mute), "ROTEL_MUTE_"))
+	}
+	if s.Source != ROTEL_SOURCE_NONE {
+		parts = append(parts, " source=", strings.TrimPrefix(fmt.Sprint(s.Source), "ROTEL_SOURCE_"))
+	}
+	if s.Freq != "" {
+		parts = append(parts, " freq=", strconv.Quote(s.Freq))
+	}
+	if s.Bypass != ROTEL_BYPASS_NONE {
+		parts = append(parts, " bypass=", strings.TrimPrefix(fmt.Sprint(s.Bypass), "ROTEL_BYPASS_"))
+	}
+	if s.Bass != ROTEL_TONE_NONE {
+		parts = append(parts, " bass=", strings.TrimPrefix(fmt.Sprint(s.Bass), "ROTEL_TONE_"))
+	}
+	if s.Treble != ROTEL_TONE_NONE {
+		parts = append(parts, " treble=", strings.TrimPrefix(fmt.Sprint(s.Treble), "ROTEL_TONE_"))
+	}
+	if s.Balance != ROTEL_BALANCE_NONE {
+		parts = append(parts, " balance=", strings.TrimPrefix(fmt.Sprint(s.Balance), "ROTEL_BALANCE_"))
+	}
+	if s.Speaker != ROTEL_SPEAKER_NONE {
+		parts = append(parts, " speaker=", strings.TrimPrefix(fmt.Sprint(s.Speaker), "ROTEL_SPEAKER_"))
+	}
+	if s.Dimmer != ROTEL_DIMMER_NONE {
+		parts = append(parts, " dimmer=", strings.TrimPrefix(fmt.Sprint(s.Dimmer), "ROTEL_DIMMER_"))
+	}
+	if s.Update != ROTEL_UPDATE_NONE {
+		parts = append(parts, " update=", strings.TrimPrefix(fmt.Sprint(s.Update), "ROTEL_UPDATE_"))
+	}
+	return fmt.Sprintf("<rotel.State>{ %v }", strings.TrimSpace(strings.Join(parts, "")))
+}
 
 func (p Power) String() string {
 	switch p {
@@ -212,11 +272,40 @@ func (p Power) String() string {
 		return "ROTEL_POWER_ON"
 	case ROTEL_POWER_STANDBY:
 		return "ROTEL_POWER_STANDBY"
-	case ROTEL_POWER_TOGGLE:
-		return "ROTEL_POWER_TOGGLE"
 	default:
 		return "[?? Invalid Power value]"
 	}
+}
+
+func (s Speaker) String() string {
+	switch s {
+	case ROTEL_SPEAKER_NONE:
+		return "ROTEL_SPEAKER_NONE"
+	case ROTEL_SPEAKER_A:
+		return "ROTEL_SPEAKER_A"
+	case ROTEL_SPEAKER_B:
+		return "ROTEL_SPEAKER_B"
+	case ROTEL_SPEAKER_ALL:
+		return "ROTEL_SPEAKER_ALL"
+	case ROTEL_SPEAKER_OFF:
+		return "ROTEL_SPEAKER_OFF"
+	default:
+		return "[?? Invalid Speaker value]"
+	}
+}
+
+func (b Bypass) String() string {
+	switch b {
+	case ROTEL_BYPASS_NONE:
+		return "ROTEL_BYPASS_NONE"
+	case ROTEL_BYPASS_ON:
+		return "ROTEL_BYPASS_ON"
+	case ROTEL_BYPASS_OFF:
+		return "ROTEL_BYPASS_OFF"
+	default:
+		return "[?? Invalid Bypass value ]"
+	}
+
 }
 
 func (m Mute) String() string {
@@ -227,10 +316,6 @@ func (m Mute) String() string {
 		return "ROTEL_MUTE_ON"
 	case ROTEL_MUTE_OFF:
 		return "ROTEL_MUTE_OFF"
-	case ROTEL_MUTE_TOGGLE:
-		return "ROTEL_MUTE_TOGGLE"
-	case ROTEL_MUTE_OTHER:
-		return "ROTEL_MUTE_OTHER"
 	default:
 		return "[?? Invalid Mute value]"
 	}
@@ -241,7 +326,9 @@ func (v Volume) String() string {
 		return "ROTEL_VOLUME_NONE"
 	} else if v == ROTEL_VOLUME_MAX {
 		return "ROTEL_VOLUME_MAX"
-	} else if v < ROTEL_VOLUME_MAX {
+	} else if v == ROTEL_VOLUME_MIN {
+		return "ROTEL_VOLUME_MIN"
+	} else if v > ROTEL_VOLUME_MIN && v < ROTEL_VOLUME_MAX {
 		return fmt.Sprintf("ROTEL_VOLUME_%d", v)
 	} else {
 		return "[?? Invalid Volume value]"
@@ -256,8 +343,8 @@ func (t Tone) String() string {
 		return "ROTEL_TONE_MAX"
 	case t == ROTEL_TONE_MIN:
 		return "ROTEL_TONE_MIN"
-	case t == ROTEL_TONE_OTHER:
-		return "ROTEL_TONE_OTHER"
+	case t == ROTEL_TONE_OFF:
+		return "ROTEL_TONE_OFF"
 	case t >= ROTEL_TONE_MIN && t < ROTEL_TONE_NONE:
 		return fmt.Sprintf("ROTEL_TONE_MINUS_%d", -t)
 	case t <= ROTEL_TONE_MAX && t > ROTEL_TONE_NONE:
@@ -271,6 +358,8 @@ func (b Balance) String() string {
 	switch {
 	case b == ROTEL_BALANCE_NONE:
 		return "ROTEL_BALANCE_NONE"
+	case b == ROTEL_BALANCE_OFF:
+		return "ROTEL_BALANCE_OFF"
 	case b == ROTEL_BALANCE_LEFT_MAX:
 		return "ROTEL_BALANCE_LEFT_MAX"
 	case b == ROTEL_BALANCE_RIGHT_MAX:
@@ -280,7 +369,7 @@ func (b Balance) String() string {
 	case b <= ROTEL_BALANCE_RIGHT_MAX && b > ROTEL_BALANCE_NONE:
 		return fmt.Sprintf("ROTEL_BALANCE_RIGHT_%d", b)
 	default:
-		return "[?? Invalid Balance value]"
+		return fmt.Sprintf("[?? Invalid Balance value (%v) ]", b)
 	}
 }
 
@@ -319,31 +408,33 @@ func (s Source) String() string {
 	}
 }
 
-func (s Speaker) String() string {
-	switch {
-	case s.A == true && s.B == false:
-		return "ROTEL_SPEAKER_A"
-	case s.B == true && s.A == false:
-		return "ROTEL_SPEAKER_B"
-	case s.B == true && s.A == true:
-		return "ROTEL_SPEAKER_BOTH"
-	default:
-		return "ROTEL_SPEAKER_NONE"
-	}
-}
-
 func (d Dimmer) String() string {
 	switch {
 	case d == ROTEL_DIMMER_NONE:
 		return "ROTEL_DIMMER_NONE"
 	case d == ROTEL_DIMMER_MAX:
 		return "ROTEL_DIMMER_MAX"
-	case d == ROTEL_DIMMER_OTHER:
-		return "ROTEL_DIMMER_OTHER"
-	case d > ROTEL_DIMMER_NONE && d <= ROTEL_DIMMER_MAX:
+	case d == ROTEL_DIMMER_MIN:
+		return "ROTEL_DIMMER_MIN"
+	case d == ROTEL_DIMMER_OFF:
+		return "ROTEL_DIMMER_OFF"
+	case d > ROTEL_DIMMER_MIN && d < ROTEL_DIMMER_MAX:
 		return fmt.Sprintf("ROTEL_DIMMER_%d", d)
 	default:
 		return "[?? Invalid Dimmer value]"
+	}
+}
+
+func (u Update) String() string {
+	switch u {
+	case ROTEL_UPDATE_NONE:
+		return "ROTEL_UPDATE_NONE"
+	case ROTEL_UPDATE_MANUAL:
+		return "ROTEL_UPDATE_MANUAL"
+	case ROTEL_UPDATE_AUTO:
+		return "ROTEL_UPDATE_AUTO"
+	default:
+		return "[?? Invalid Update value]"
 	}
 }
 
@@ -373,6 +464,8 @@ func (e EventType) String() string {
 		return "EVENT_TYPE_SPEAKER"
 	case EVENT_TYPE_DIMMER:
 		return "EVENT_TYPE_DIMMER"
+	case EVENT_TYPE_UPDATE:
+		return "EVENT_TYPE_UPDATE"
 	default:
 		return "[?? Invalid EventType value]"
 	}
@@ -392,20 +485,12 @@ func (c Command) String() string {
 		return "ROTEL_COMMAND_TRACK_NEXT"
 	case ROTEL_COMMAND_TRACK_PREV:
 		return "ROTEL_COMMAND_TRACK_PREV"
-	case ROTEL_COMMAND_MUTE_OFF:
-		return "ROTEL_COMMAND_MUTE_OFF"
-	case ROTEL_COMMAND_MUTE_ON:
-		return "ROTEL_COMMAND_MUTE_ON"
 	case ROTEL_COMMAND_MUTE_TOGGLE:
 		return "ROTEL_COMMAND_MUTE_TOGGLE"
 	case ROTEL_COMMAND_VOL_UP:
 		return "ROTEL_COMMAND_VOL_UP"
 	case ROTEL_COMMAND_VOL_DOWN:
 		return "ROTEL_COMMAND_VOL_DOWN"
-	case ROTEL_COMMAND_BYPASS_OFF:
-		return "ROTEL_COMMAND_BYPASS_OFF"
-	case ROTEL_COMMAND_BYPASS_ON:
-		return "ROTEL_COMMAND_BYPASS_ON"
 	case ROTEL_COMMAND_BASS_UP:
 		return "ROTEL_COMMAND_BASS_UP"
 	case ROTEL_COMMAND_BASS_DOWN:
@@ -428,20 +513,10 @@ func (c Command) String() string {
 		return "ROTEL_COMMAND_SPEAKER_A_TOGGLE"
 	case ROTEL_COMMAND_SPEAKER_B_TOGGLE:
 		return "ROTEL_COMMAND_SPEAKER_B_TOGGLE"
-	case ROTEL_COMMAND_SPEAKER_A_ON:
-		return "ROTEL_COMMAND_SPEAKER_A_ON"
-	case ROTEL_COMMAND_SPEAKER_A_OFF:
-		return "ROTEL_COMMAND_SPEAKER_A_OFF"
-	case ROTEL_COMMAND_SPEAKER_B_ON:
-		return "ROTEL_COMMAND_SPEAKER_B_ON"
-	case ROTEL_COMMAND_SPEAKER_B_OFF:
-		return "ROTEL_COMMAND_SPEAKER_B_OFF"
 	case ROTEL_COMMAND_DIMMER_TOGGLE:
 		return "ROTEL_COMMAND_DIMMER_TOGGLE"
-	case ROTEL_COMMAND_RS232_UPDATE_ON:
-		return "ROTEL_COMMAND_RS232_UPDATE_ON"
-	case ROTEL_COMMAND_RS232_UPDATE_OFF:
-		return "ROTEL_COMMAND_RS232_UPDATE_OFF"
+	case ROTEL_COMMAND_POWER_TOGGLE:
+		return "ROTEL_COMMAND_POWER_TOGGLE"
 	default:
 		return "[?? Invalid Command value]"
 	}

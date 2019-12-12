@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -24,12 +25,65 @@ func SetPower(stub rotel.RotelClient, value string) error {
 		return stub.Set(rotel.RotelState{
 			Power: rotel.ROTEL_POWER_STANDBY,
 		})
-	case "", "toggle":
+	case "toggle":
+		return stub.Send(rotel.ROTEL_COMMAND_POWER_TOGGLE)
+	default:
+		return fmt.Errorf("-power value should be on, standby, off or toggle")
+	}
+}
+
+func SetMute(stub rotel.RotelClient, value string) error {
+	switch value {
+	case "on":
 		return stub.Set(rotel.RotelState{
-			Power: rotel.ROTEL_POWER_TOGGLE,
+			Mute: rotel.ROTEL_MUTE_ON,
+		})
+	case "off":
+		return stub.Set(rotel.RotelState{
+			Mute: rotel.ROTEL_MUTE_OFF,
+		})
+	case "toggle", "":
+		return stub.Send(rotel.ROTEL_COMMAND_MUTE_TOGGLE)
+	default:
+		return fmt.Errorf("-mute value should be onor off")
+	}
+}
+
+func SetBypass(stub rotel.RotelClient, value string) error {
+	switch value {
+	case "on":
+		return stub.Set(rotel.RotelState{
+			Bypass: rotel.ROTEL_BYPASS_ON,
+		})
+	case "off":
+		return stub.Set(rotel.RotelState{
+			Bypass: rotel.ROTEL_BYPASS_OFF,
 		})
 	default:
-		return fmt.Errorf("-power value should be on, standby or toggle")
+		return fmt.Errorf("-bypass value should be on or off")
+	}
+}
+
+func SetSpeaker(stub rotel.RotelClient, value string) error {
+	switch value {
+	case "off":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_OFF,
+		})
+	case "a":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_A,
+		})
+	case "b":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_B,
+		})
+	case "all", "both":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_ALL,
+		})
+	default:
+		return fmt.Errorf("-speaker value should be off, a, b or all")
 	}
 }
 
@@ -71,6 +125,22 @@ func SendCommand(stub rotel.RotelClient, value string) error {
 	return fmt.Errorf("command should be one of: %v", strings.Join(values, ", "))
 }
 
+func EventLoop(stub gopi.Publisher, done <-chan struct{}) {
+	evt := stub.Subscribe()
+FOR_LOOP:
+	for {
+		select {
+		case <-done:
+			break FOR_LOOP
+		case event := <-evt:
+			if evt_ := event.(rotel.RotelEvent); evt_ != nil && evt_.Type() != rotel.EVENT_TYPE_NONE {
+				fmt.Println(evt_.Type(), evt_.State())
+			}
+		}
+	}
+	stub.Unsubscribe(evt)
+}
+
 func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- struct{}) error {
 	// Get the client
 	if stub, err := app.ClientPool.NewClientEx("gopi.Rotel", services, gopi.RPC_FLAG_SERVICE_ANY); err != nil {
@@ -98,12 +168,50 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 				return err
 			}
 		}
+		// Mute
+		if mute, exists := app.AppFlags.GetString("mute"); exists {
+			if err := SetMute(device, mute); err != nil {
+				return err
+			}
+		}
+		// Bypass
+		if bypass, exists := app.AppFlags.GetString("bypass"); exists {
+			if err := SetBypass(device, bypass); err != nil {
+				return err
+			}
+		}
+		// Speaker
+		if speaker, exists := app.AppFlags.GetString("speaker"); exists {
+			if err := SetSpeaker(device, speaker); err != nil {
+				return err
+			}
+		}
 
 		// Commands
 		for _, arg := range app.AppFlags.Args() {
 			if err := SendCommand(device, arg); err != nil {
 				return err
 			}
+		}
+
+		// Watch
+		if watch, _ := app.AppFlags.GetBool("watch"); watch {
+			ctx, cancel := context.WithCancel(context.Background())
+			stop := make(chan struct{})
+			go func() {
+				if err := device.StreamEvents(ctx); err != nil && err != context.Canceled {
+					app.Logger.Error("Error: %v", err)
+				}
+				stop <- gopi.DONE
+			}()
+
+			// Print events in background as the occur
+			go EventLoop(device, stop)
+
+			// Wait for CTRL+C then cancel
+			app.Logger.Info("Press CTRL+C to exit")
+			app.WaitForSignal()
+			cancel()
 		}
 	}
 
@@ -120,6 +228,10 @@ func main() {
 	config.AppFlags.FlagString("power", "", "Power switch (on, off or toggle)")
 	config.AppFlags.FlagUint("volume", 55, "Set volume (1-96)")
 	config.AppFlags.FlagString("source", "", "Set input source")
+	config.AppFlags.FlagString("mute", "", "Mute audio (on, off or toggle)")
+	config.AppFlags.FlagString("bypass", "", "Bypass tone controls (on or off)")
+	config.AppFlags.FlagString("speaker", "", "Speaker output (off, a, b or all)")
+	config.AppFlags.FlagBool("watch", false, "Watch for updates")
 
 	// Run the command line tool
 	os.Exit(rpc.Client(config, 200*time.Millisecond, Main))

@@ -121,7 +121,6 @@ func (this *Client) StreamEvents(ctx context.Context) error {
 
 	// Errors channel receives errors from recv
 	errors := make(chan error)
-	defer close(errors)
 
 	// Receive messages in the background
 	go func() {
@@ -136,16 +135,18 @@ func (this *Client) StreamEvents(ctx context.Context) error {
 				this.Emit(evt)
 			}
 		}
-		fmt.Println("StreamEvents: ENDED GOROUTINE")
+		close(errors)
 	}()
 
 	// Continue until error or io.EOF is returned
 	for {
 		select {
-		case err := <-errors:
-			return err
 		case <-ctx.Done():
-			return ctx.Err()
+			if err := <-errors; err == nil || grpc.IsErrCanceled(err) {
+				return nil
+			} else {
+				return err
+			}
 		}
 	}
 }

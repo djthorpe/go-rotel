@@ -42,6 +42,7 @@ message RotelEvent {
         EVENT_BALANCE = 9;
         EVENT_SPEAKER = 10;
         EVENT_DIMMER = 11;
+        EVENT_UPDATE = 12;
     }
 
     Type type = 1;
@@ -53,44 +54,61 @@ message RotelState {
         POWER_NONE = 0;
         POWER_ON = 1;
         POWER_STANDBY = 2;
-        POWER_TOGGLE = 3;
     }
     enum Source {
-        INPUT_NONE = 0;
-        INPUT_CD = 1;
-        INPUT_COAX1 = 2;
-        INPUT_COAX2 = 3;
-        INPUT_OPT1 = 4;
-        INPUT_OPT2 = 5;
-        INPUT_AUX1 = 6;
-        INPUT_AUX2 = 7;
-        INPUT_TUNER = 8;
-        INPUT_PHONO = 9;
-        INPUT_USB = 10;
-        INPUT_BLUETOOTH = 11;
-        INPUT_PC_USB = 12;
+        SOURCE_NONE = 0;
+        SOURCE_CD = 1;
+        SOURCE_COAX1 = 2;
+        SOURCE_COAX2 = 3;
+        SOURCE_OPT1 = 4;
+        SOURCE_OPT2 = 5;
+        SOURCE_AUX1 = 6;
+        SOURCE_AUX2 = 7;
+        SOURCE_TUNER = 8;
+        SOURCE_PHONO = 9;
+        SOURCE_USB = 10;
+        SOURCE_BLUETOOTH = 11;
+        SOURCE_PC_USB = 12;
+        SOURCE_OTHER = 13;
     }
     enum Volume {
         VOLUME_NONE = 0;
     }
     enum Mute {
-        MUTE_OFF = 0;
+        MUTE_NONE = 0;
         MUTE_ON = 1;
+        MUTE_OFF = 2;
+    }
+    enum Bypass {
+        BYPASS_NONE = 0;
+        BYPASS_ON = 1;
+        BYPASS_OFF = 2;
     }
     enum Tone {
         TONE_NONE = 0;
+        TONE_OFF = 101;
     }
     enum Balance {
         BALANCE_NONE = 0;
+        BALANCE_OFF = 16;
     }
     enum Speaker {
         SPEAKER_NONE = 0;
         SPEAKER_A = 1;
         SPEAKER_B = 2;
         SPEAKER_ALL = 3;
+        SPEAKER_OFF = 4;
     }
     enum Dimmer {
-        DIMMER_NONE = 0;        
+        DIMMER_NONE = 0;      
+        DIMMER_MIN = 1;
+        DIMMER_MAX = 9;
+        DIMMER_OFF = 10;  
+    }
+    enum Update {
+        UPDATE_NONE = 0;      
+        UPDATE_MANUAL = 1;
+        UPDATE_AUTO = 2;
     }
 
     Power power = 1;
@@ -98,12 +116,13 @@ message RotelState {
     Source source = 3;
     Mute mute = 4;
     string Freq = 5;
-    bool bypass = 6;
+    Bypass bypass = 6;
     Tone bass = 7;
     Tone treble = 8;
     Balance balance = 9;
     Speaker speaker = 10;
     Dimmer dimmer = 11;
+    Update update = 12;
 }
 
 message RotelCommand {
@@ -114,31 +133,22 @@ message RotelCommand {
         COMMAND_PAUSE = 3;
         COMMAND_TRACK_NEXT = 4;
         COMMAND_TRACK_PREV = 5;
-        COMMAND_MUTE_OFF = 6;
-        COMMAND_MUTE_ON = 7;
-        COMMAND_MUTE_TOGGLE = 8;
-        COMMAND_VOL_UP = 9;
-        COMMAND_VOL_DOWN = 10;
-        COMMAND_BYPASS_OFF = 11;
-        COMMAND_BYPASS_ON = 12;
-        COMMAND_BASS_UP = 13;
-        COMMAND_BASS_DOWN = 14;
-        COMMAND_BASS_RESET = 15;
-        COMMAND_TREBLE_UP = 16;
-        COMMAND_TREBLE_DOWN = 17;
-        COMMAND_TREBLE_RESET = 18;
-        COMMAND_BALANCE_LEFT = 19;
-        COMMAND_BALANCE_RIGHT = 20;
-        COMMAND_BALANCE_RESET = 21;
-        COMMAND_SPEAKER_A_TOGGLE = 22;
-        COMMAND_SPEAKER_B_TOGGLE = 23;
-        COMMAND_SPEAKER_A_ON = 24;
-        COMMAND_SPEAKER_A_OFF = 25;
-        COMMAND_SPEAKER_B_ON = 26;
-        COMMAND_SPEAKER_B_OFF = 27;
-        COMMAND_DIMMER_TOGGLE = 28;
-        COMMAND_RS232_UPDATE_ON = 36;
-        COMMAND_RS232_UPDATE_OFF = 37;
+        COMMAND_MUTE_TOGGLE = 6;
+        COMMAND_VOL_UP = 7;
+        COMMAND_VOL_DOWN = 8;
+        COMMAND_BASS_UP = 9;
+        COMMAND_BASS_DOWN = 10;
+        COMMAND_BASS_RESET = 11;
+        COMMAND_TREBLE_UP = 12;
+        COMMAND_TREBLE_DOWN = 13;
+        COMMAND_TREBLE_RESET = 14;
+        COMMAND_BALANCE_LEFT = 15;
+        COMMAND_BALANCE_RIGHT = 16;
+        COMMAND_BALANCE_RESET = 17;
+        COMMAND_SPEAKER_A_TOGGLE = 18;
+        COMMAND_SPEAKER_B_TOGGLE = 19;
+        COMMAND_DIMMER_TOGGLE = 20;
+        COMMAND_POWER_TOGGLE = 21;
     }
     Command command = 1;
 }
