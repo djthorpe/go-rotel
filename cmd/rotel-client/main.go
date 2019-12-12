@@ -122,22 +122,24 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 		}
 
 		// Watch
-		ctx, cancel := context.WithCancel(context.Background())
-		stop := make(chan struct{})
-		go func() {
-			if err := device.StreamEvents(ctx); err != nil && err != context.Canceled {
-				app.Logger.Error("Error: %v", err)
-			}
-			stop <- gopi.DONE
-		}()
+		if watch, _ := app.AppFlags.GetBool("watch"); watch {
+			ctx, cancel := context.WithCancel(context.Background())
+			stop := make(chan struct{})
+			go func() {
+				if err := device.StreamEvents(ctx); err != nil && err != context.Canceled {
+					app.Logger.Error("Error: %v", err)
+				}
+				stop <- gopi.DONE
+			}()
 
-		// Print events in background as the occur
-		go EventLoop(device, stop)
+			// Print events in background as the occur
+			go EventLoop(device, stop)
 
-		// Wait for CTRL+C then cancel
-		app.Logger.Info("Press CTRL+C to exit")
-		app.WaitForSignal()
-		cancel()
+			// Wait for CTRL+C then cancel
+			app.Logger.Info("Press CTRL+C to exit")
+			app.WaitForSignal()
+			cancel()
+		}
 	}
 
 	// Success
@@ -153,6 +155,7 @@ func main() {
 	config.AppFlags.FlagString("power", "", "Power switch (on, off or toggle)")
 	config.AppFlags.FlagUint("volume", 55, "Set volume (1-96)")
 	config.AppFlags.FlagString("source", "", "Set input source")
+	config.AppFlags.FlagBool("watch", false, "Watch for updates")
 
 	// Run the command line tool
 	os.Exit(rpc.Client(config, 200*time.Millisecond, Main))

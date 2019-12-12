@@ -160,7 +160,7 @@ func (this *driver) Set(state rotel.RotelState) error {
 	this.Lock()
 	defer this.Unlock()
 
-	if state.Power != this.state.Power {
+	if state.Power != rotel.ROTEL_POWER_NONE && state.Power != this.state.Power {
 		if err := this.setPower(state.Power); err != nil {
 			return fmt.Errorf("setPower: %w", err)
 		}
