@@ -170,6 +170,7 @@ func (this *driver) Set(state rotel.RotelState) error {
 		}
 	}
 	if state.Volume != this.state.Volume {
+		this.log.Debug("current vol=%v set new vol=%v", this.state.Volume, state.Volume)
 		if err := this.setVolume(state.Volume); err != nil {
 			return fmt.Errorf("setVolume: %w", err)
 		}
@@ -214,6 +215,11 @@ func (this *driver) Set(state rotel.RotelState) error {
 			return fmt.Errorf("setUpdate: %w", err)
 		}
 	}
+	if state.Speaker != this.state.Speaker {
+		if err := this.setSpeaker(state.Speaker); err != nil {
+			return fmt.Errorf("setSpeaker: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -236,10 +242,10 @@ func (this *driver) setPower(value rotel.Power) error {
 func (this *driver) setVolume(value rotel.Volume) error {
 	this.log.Debug2("<rotel.SetVolume>{ %v }", value)
 
-	if value < rotel.ROTEL_VOLUME_MIN || value > rotel.ROTEL_VOLUME_MAX {
-		return gopi.ErrBadParameter
-	} else {
+	if value >= rotel.ROTEL_VOLUME_MIN && value <= rotel.ROTEL_VOLUME_MAX {
 		return this.write(fmt.Sprintf("vol_%d", value))
+	} else {
+		return gopi.ErrBadParameter
 	}
 }
 
@@ -276,6 +282,47 @@ func (this *driver) setBypass(value rotel.Bypass) error {
 		return this.write("bypass_on")
 	case rotel.ROTEL_BYPASS_OFF:
 		return this.write("bypass_off")
+	default:
+		return gopi.ErrBadParameter
+	}
+}
+
+func (this *driver) setSpeaker(value rotel.Speaker) error {
+	this.log.Debug2("<rotel.setSpeaker>{ %v }", value)
+
+	switch value {
+	case rotel.ROTEL_SPEAKER_OFF:
+		if err := this.write("speaker_a_off"); err != nil {
+			return err
+		} else if err := this.write("speaker_b_off"); err != nil {
+			return err
+		} else {
+			return nil
+		}
+	case rotel.ROTEL_SPEAKER_A:
+		if err := this.write("speaker_a_on"); err != nil {
+			return err
+		} else if err := this.write("speaker_b_off"); err != nil {
+			return err
+		} else {
+			return nil
+		}
+	case rotel.ROTEL_SPEAKER_B:
+		if err := this.write("speaker_b_on"); err != nil {
+			return err
+		} else if err := this.write("speaker_a_off"); err != nil {
+			return err
+		} else {
+			return nil
+		}
+	case rotel.ROTEL_SPEAKER_ALL:
+		if err := this.write("speaker_b_on"); err != nil {
+			return err
+		} else if err := this.write("speaker_a_on"); err != nil {
+			return err
+		} else {
+			return nil
+		}
 	default:
 		return gopi.ErrBadParameter
 	}
@@ -360,13 +407,9 @@ func (this *driver) Send(value rotel.Command) error {
 		return this.write("trkf")
 	case rotel.ROTEL_COMMAND_TRACK_PREV:
 		return this.write("trkb")
-	case rotel.ROTEL_COMMAND_MUTE_ON, rotel.ROTEL_COMMAND_MUTE_OFF:
-		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_MUTE_TOGGLE:
 		return this.write("mute")
 	case rotel.ROTEL_COMMAND_VOL_UP, rotel.ROTEL_COMMAND_VOL_DOWN:
-		return this.write(strings.ToLower(str))
-	case rotel.ROTEL_COMMAND_BYPASS_OFF, rotel.ROTEL_COMMAND_BYPASS_ON:
 		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_BASS_UP, rotel.ROTEL_COMMAND_TREBLE_UP, rotel.ROTEL_COMMAND_BASS_DOWN, rotel.ROTEL_COMMAND_TREBLE_DOWN:
 		return this.write(strings.ToLower(str))
@@ -384,8 +427,6 @@ func (this *driver) Send(value rotel.Command) error {
 		return this.write("speaker_a")
 	case rotel.ROTEL_COMMAND_SPEAKER_B_TOGGLE:
 		return this.write("speaker_b")
-	case rotel.ROTEL_COMMAND_SPEAKER_A_ON, rotel.ROTEL_COMMAND_SPEAKER_A_OFF, rotel.ROTEL_COMMAND_SPEAKER_B_ON, rotel.ROTEL_COMMAND_SPEAKER_B_OFF:
-		return this.write(strings.ToLower(str))
 	case rotel.ROTEL_COMMAND_DIMMER_TOGGLE:
 		return this.write("dimmer")
 	default:
@@ -548,12 +589,18 @@ func (this *driver) retrieveparams() error {
 		return this.read("power")
 	case this.state.Power != rotel.ROTEL_POWER_ON:
 		return nil
+	case this.state.Update == rotel.ROTEL_UPDATE_NONE:
+		if err := this.write("rs232_update_on"); err != nil {
+			return err
+		} else {
+			this.evtUpdate(rotel.ROTEL_UPDATE_AUTO)
+		}
+	case this.state.Volume == rotel.ROTEL_VOLUME_NONE:
+		return this.read("volume")
 	case this.state.Source == rotel.ROTEL_SOURCE_NONE:
 		return this.read("source")
 	case this.state.Freq == "":
 		return this.read("freq")
-	case this.state.Volume == rotel.ROTEL_VOLUME_NONE:
-		return this.read("volume")
 	case this.state.Bypass == rotel.ROTEL_BYPASS_NONE:
 		return this.read("bypass")
 	case this.state.Speaker == rotel.ROTEL_SPEAKER_NONE:
