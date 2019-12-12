@@ -32,6 +32,61 @@ func SetPower(stub rotel.RotelClient, value string) error {
 	}
 }
 
+func SetMute(stub rotel.RotelClient, value string) error {
+	switch value {
+	case "on":
+		return stub.Set(rotel.RotelState{
+			Mute: rotel.ROTEL_MUTE_ON,
+		})
+	case "off":
+		return stub.Set(rotel.RotelState{
+			Mute: rotel.ROTEL_MUTE_OFF,
+		})
+	case "toggle", "":
+		return stub.Send(rotel.ROTEL_COMMAND_MUTE_TOGGLE)
+	default:
+		return fmt.Errorf("-mute value should be onor off")
+	}
+}
+
+func SetBypass(stub rotel.RotelClient, value string) error {
+	switch value {
+	case "on":
+		return stub.Set(rotel.RotelState{
+			Bypass: rotel.ROTEL_BYPASS_ON,
+		})
+	case "off":
+		return stub.Set(rotel.RotelState{
+			Bypass: rotel.ROTEL_BYPASS_OFF,
+		})
+	default:
+		return fmt.Errorf("-bypass value should be on or off")
+	}
+}
+
+func SetSpeaker(stub rotel.RotelClient, value string) error {
+	switch value {
+	case "off":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_OFF,
+		})
+	case "a":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_A,
+		})
+	case "b":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_B,
+		})
+	case "all", "both":
+		return stub.Set(rotel.RotelState{
+			Speaker: rotel.ROTEL_SPEAKER_ALL,
+		})
+	default:
+		return fmt.Errorf("-speaker value should be off, a, b or all")
+	}
+}
+
 func SetVolume(stub rotel.RotelClient, value rotel.Volume) error {
 	if value == 0 || value > rotel.ROTEL_VOLUME_MAX {
 		return fmt.Errorf("-volume value should be between 1 and %v", rotel.ROTEL_VOLUME_MAX)
@@ -113,6 +168,24 @@ func Main(app *gopi.AppInstance, services []gopi.RPCServiceRecord, done chan<- s
 				return err
 			}
 		}
+		// Mute
+		if mute, exists := app.AppFlags.GetString("mute"); exists {
+			if err := SetMute(device, mute); err != nil {
+				return err
+			}
+		}
+		// Bypass
+		if bypass, exists := app.AppFlags.GetString("bypass"); exists {
+			if err := SetBypass(device, bypass); err != nil {
+				return err
+			}
+		}
+		// Speaker
+		if speaker, exists := app.AppFlags.GetString("speaker"); exists {
+			if err := SetSpeaker(device, speaker); err != nil {
+				return err
+			}
+		}
 
 		// Commands
 		for _, arg := range app.AppFlags.Args() {
@@ -155,6 +228,9 @@ func main() {
 	config.AppFlags.FlagString("power", "", "Power switch (on, off or toggle)")
 	config.AppFlags.FlagUint("volume", 55, "Set volume (1-96)")
 	config.AppFlags.FlagString("source", "", "Set input source")
+	config.AppFlags.FlagString("mute", "", "Mute audio (on, off or toggle)")
+	config.AppFlags.FlagString("bypass", "", "Bypass tone controls (on or off)")
+	config.AppFlags.FlagString("speaker", "", "Speaker output (off, a, b or all)")
 	config.AppFlags.FlagBool("watch", false, "Watch for updates")
 
 	// Run the command line tool

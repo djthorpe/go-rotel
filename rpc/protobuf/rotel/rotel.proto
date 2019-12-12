@@ -76,8 +76,8 @@ message RotelState {
     }
     enum Mute {
         MUTE_NONE = 0;
-        MUTE_OFF = 1;
-        MUTE_ON = 2;
+        MUTE_ON = 1;
+        MUTE_OFF = 2;
     }
     enum Bypass {
         BYPASS_NONE = 0;
