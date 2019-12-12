@@ -43,7 +43,7 @@ bash# cd rotel
 bash# make
 ```
 
-You should end up with two binaries, `rotel-service` and `rotel-client`. These are a microservice for control of your Rotel amplifier and a client to interact with the service over the network.
+You should end up with three binaries, `rotel-ctrl`, `rotel-service` and `rotel-client`. These are a microservice for control of your Rotel amplifier and a client to interact with the service over the network.
 
 ## Running the Rotel Service
 
@@ -84,7 +84,49 @@ You can verify the service is working by adding the `-debug` flag when invoking 
 
 ## Using the example client
 
-TODO
+The example command-line client allows you to control your Rotel amplifier on the command line
+through gRPC calls to the service. Here are the command line options:
+
+```bash
+
+Syntax: rotel-client <flags> <commands>
+
+Usage of rotel-client:
+  -addr string
+    	Service name or address:port
+  -bypass string
+    	Bypass tone controls (on or off)
+  -mute string
+    	Mute audio (on, off or toggle)
+  -power string
+    	Power switch (on, off or toggle)
+  -rpc.insecure
+    	Allow plaintext connections
+  -rpc.skipverify
+    	Skip SSL certificate verification (default true)
+  -source string
+    	Set input source
+  -speaker string
+    	Speaker output (off, a, b or all)
+  -volume uint
+    	Set volume (1-96) (default 55)
+  -watch
+    	Watch for updates
+```
+
+In addition to the flags, the commands you can send are as follows:
+
+```
+play, stop, pause, track_next, track_prev, mute_toggle, vol_up, vol_down, bass_up, bass_down, bass_reset, treble_up, treble_down, treble_reset, balance_left, balance_right, balance_reset, speaker_a_toggle, speaker_b_toggle, dimmer_toggle, power_toggle
+```
+
+This is for example how you might connect to a remote service unenrypted to toggle power:
+
+```bash
+bash# rotel-client -addr rotel.local:8080 -rpc.insecure power_toggle
+```
+
+You can use the `-watch` command to watch for state changes of your amplifier.
 
 ## Incorporating the Rotel module in your own code
 
@@ -127,11 +169,11 @@ This application has a `Main` function to send commands:
 ```go
 
 func Main(app *gopi.AppInstance, done chan<- struct{}) error {
-  // Send command to toggle mute on/off
-  device := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel)
+	// Send command to toggle mute on/off
+	device := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel)
 	if err := device.Send(rotel.ROTEL_COMMAND_MUTE_TOGGLE); err != nil {
-    return err
-  }
+		return err
+	}
 
 	// Wait for CTRL+C
 	app.Logger.Info("Waiting for CTRL+C")
@@ -149,7 +191,7 @@ There is also a background `EventLoop` which listens for state changes:
 ```go
 
 func EventLoop(app *gopi.AppInstance, ..., done <-chan struct{}) error {
-  device := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel)
+	device := app.ModuleInstance("mutablehome/rotel").(rotel.Rotel)
 	evt := device.Subscribe()
 FOR_LOOP:
 	for {
