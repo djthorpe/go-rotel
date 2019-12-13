@@ -18,7 +18,7 @@ all: test install clean
 
 install: rotel-service rotel-client rotel-ctrl
 
-test:
+test: protobuf
 	$(GOTEST) ./...
 
 protobuf:
