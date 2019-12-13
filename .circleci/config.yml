@@ -6,6 +6,13 @@ jobs:
     working_directory: /go/src/github.com/djthorpe/rotel
     steps:
       - checkout
-      - run: make test
-      - run: make install
-      - run: make clean
+      - run: 
+          command: |
+            curl -s -L https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protoc-3.7.1-linux-x86_64.zip > /tmp/protoc.zip
+            unzip -d /tmp /tmp/protoc.zip
+            chmod +x /tmp/bin/protoc
+            echo 'export PATH=/tmp/bin:$PATH' >> $BASH_ENV
+            source $BASH_ENV
+      - run: go get -u github.com/golang/protobuf/protoc-gen-go
+      - run: make all
+
