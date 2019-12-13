@@ -14,5 +14,6 @@ jobs:
             echo 'export PATH=/tmp/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
       - run: go get -u github.com/golang/protobuf/protoc-gen-go
-      - run: make all
+      - run: make protobuf
+
 
