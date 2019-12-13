@@ -369,7 +369,7 @@ func (b Balance) String() string {
 	case b <= ROTEL_BALANCE_RIGHT_MAX && b > ROTEL_BALANCE_NONE:
 		return fmt.Sprintf("ROTEL_BALANCE_RIGHT_%d", b)
 	default:
-		return fmt.Sprintf("[?? Invalid Balance value (%v) ]", b)
+		return "[?? Invalid Balance value]"
 	}
 }
 

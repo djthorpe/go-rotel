@@ -19,7 +19,7 @@ import (
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("rpc/rotel:service", "rpc/discovery:dns-sd")
+	config := gopi.NewAppConfig("rpc/rotel:service",  "rpc/discovery:dns-sd")
 
 	// Run the server and register all the services
 	os.Exit(rpc.Server(config))

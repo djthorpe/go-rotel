@@ -14,9 +14,12 @@ GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
 GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 
-all: install
+all: test install clean
 
 install: rotel-service rotel-client rotel-ctrl
+
+test:
+	$(GOTEST) ./...
 
 protobuf:
 	$(GOGEN) -x ./rpc/...
