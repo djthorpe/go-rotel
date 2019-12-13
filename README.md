@@ -1,5 +1,7 @@
 # Rotel Amplifier Control
 
+[![CircleCI](https://circleci.com/gh/djthorpe/rotel/tree/master.svg?style=svg)](https://circleci.com/gh/djthorpe/rotel/tree/master)
+
 This repository implements control for Rotel Audio Equipment with RS232 port,
 and has been tested only with the A12 integrated amplifer. There are two ways
 you can use this software:
