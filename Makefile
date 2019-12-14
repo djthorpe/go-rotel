@@ -18,9 +18,11 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 PREFIX=/opt/gaffer
 SSLORG=mutablelogic.com
 
-all: test install clean
+all: test build clean
 
-install: rotel-service rotel-client rotel-ctrl
+build: rotel-service rotel-client rotel-ctrl
+
+install: build
 	install -m 775 -d $(PREFIX)
 	install -m 775 -d $(PREFIX)/etc
 	install -m 775 -d $(PREFIX)/sbin
