@@ -1,0 +1,21 @@
+[Unit]
+Description=Rotel Control Service
+Documentation=https://github.com/djthorpe/rotel
+After=network-online.target
+
+[Service]
+User=gopi
+Group=gopi
+Environment=PREFIX=/opt/gaffer
+ExecStart=${PREFIX}/sbin/rotel-service \
+    -verbose \
+    -rpc.port 9080 \
+    -rpc.sslcert=${PREFIX}/etc/selfsigned.cert \
+    -rpc.sslkey=${PREFIX}/etc/selfsigned.key
+KillMode=control-group
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=rotel-service.service
+

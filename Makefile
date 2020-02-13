@@ -14,9 +14,29 @@ GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
 GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 
-all: test install clean
+# Prefix for installation
+PREFIX=/opt/gaffer
+SSLORG=mutablelogic.com
 
-install: rotel-service rotel-client rotel-ctrl
+all: test build clean
+
+build: rotel-service rotel-client rotel-ctrl
+
+install: build
+	install -m 775 -d $(PREFIX)
+	install -m 775 -d $(PREFIX)/etc
+	install -m 775 -d $(PREFIX)/sbin
+	install -m 775 -d $(PREFIX)/bin
+	install etc/rotel-service.service $(PREFIX)/etc
+	install $(GOBIN)/rotel-service $(PREFIX)/sbin
+	install $(GOBIN)/rotel-client $(PREFIX)/bin/rotel
+	openssl req -x509 -nodes -newkey rsa:2048 \
+		-keyout "${PREFIX}/etc/selfsigned.key" \
+		-out "${PREFIX}/etc/selfsigned.crt" \
+		-days 9999 -subj "/O=${SSLORG}"
+	echo sudo useradd --system --user-group gopi
+	echo sudo ln -s $(PREFIX)/etc/rotel-service.service /etc/systemd/system
+	echo sudo systemctl enable rotel-service
 
 test: protobuf
 	$(GOTEST) ./...
