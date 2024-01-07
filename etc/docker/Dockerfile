@@ -14,6 +14,9 @@ RUN apt update && apt install -y libmosquitto-dev
 COPY --from=builder /usr/src/app/build/* /usr/local/bin/
 COPY etc/docker/server-entrypoint.sh .
 
+# Labels
+LABEL org.opencontainers.image.source=https://github.com/djthorpe/go-rotel
+
 # Entrypoint when running the server
 ENTRYPOINT [ "/server-entrypoint.sh" ]
 CMD [ "/usr/local/bin/rotel" ]
