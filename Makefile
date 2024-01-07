@@ -2,6 +2,7 @@
 GO=$(shell which go)
 ARCH=$(shell which arch)
 UNAME=$(shell which uname)
+DOCKER=$(shell which docker)
 
 # Paths to locations, etc
 DOCKER_REGISTRY := "ghcr.io"
@@ -35,9 +36,9 @@ test: dependencies
 	@echo Running tests
 	@${GO} test ./pkg/...
 
-docker:
+docker: docker-dep
 	@echo Building docker image: ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
-	@docker build \
+	@${DOCKER} build \
 		--tag ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG} \
 		--build-arg VERSION=${BUILD_VERSION} \
 		--build-arg ARCH=${BUILD_ARCH} \
@@ -46,12 +47,15 @@ docker:
 	@echo Pushing image
 	@docker push ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
 
-FORCE:
-
 # Login to docker registry
 # GITHUB_TOKEN=YYY make docker-login
-docker-login:
-	@echo ${GITHUB_TOKEN} | docker login ${DOCKER_REGISTRY} -u ${DOCKER_USER} --password-stdin
+docker-login: docker-dep
+	@echo ${GITHUB_TOKEN} | ${DOCKER} login ${DOCKER_REGISTRY} -u ${DOCKER_USER} --password-stdin
+
+FORCE:
+
+docker-dep:
+	@test -f "${DOCKER}" && test -x "${DOCKER}"  || (echo "Missing docker binary" && exit 1)
 
 dependencies:
 	@test -f "${GO}" && test -x "${GO}"  || (echo "Missing go binary" && exit 1)
