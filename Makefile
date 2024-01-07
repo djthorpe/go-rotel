@@ -3,15 +3,14 @@ GO=$(shell which go)
 ARCH=$(shell which arch)
 UNAME=$(shell which uname)
 
-# Modules
-SERVER_MODULE = "github.com/djthorpe/go-rotel"
-
 # Paths to locations, etc
+DOCKER_REGISTRY = "ghcr.io"
+DOCKER_REPOSITORY := "djthorpe/go-rotel"
+SERVER_MODULE := "github.com/${DOCKER_REPOSITORY}"
 BUILD_DIR := "build"
 BUILD_ARCH := $(shell ${ARCH}  | tr A-Z a-z)
 BUILD_PLATFORM := $(shell ${UNAME}  | tr A-Z a-z)
 BUILD_VERSION := $(shell git describe --tags  | sed 's/^v//')
-BUILD_TAG := rotel-${BUILD_PLATFORM}-${BUILD_ARCH}:${BUILD_VERSION}
 CMD_DIR := $(wildcard cmd/*)
 
 # Add linker flags
@@ -21,6 +20,7 @@ BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GitBranch=$(shell git name-rev
 BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GitHash=$(shell git rev-parse HEAD)
 BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 BUILD_FLAGS = -ldflags "-s -w $(BUILD_LD_FLAGS)" 
+DOCKER_TAG := rotel-${BUILD_PLATFORM}-${BUILD_ARCH}:${BUILD_VERSION}
 
 all: clean cmd
 
@@ -35,14 +35,21 @@ test: dependencies
 	@${GO} test ./pkg/...
 
 docker: cmd
-	@echo Building docker image: ${BUILD_TAG}
-	docker build \
-		--tag ${BUILD_TAG} \
+	@echo Building docker image: ${DOCKER_TAG}
+	@docker build \
+		--tag ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG} \
 		--build-arg VERSION=${BUILD_VERSION} \
 		--build-arg ARCH=${BUILD_ARCH} \
 		--build-arg PLATFORM=${BUILD_PLATFORM} \
 		-f etc/docker/Dockerfile .
+	@echo Pushing image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG}
+	@docker push ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG}
 FORCE:
+
+# Login to docker registry
+# GITHUB_USER=XXX GITHUB_TOKEN=YYY make docker-login
+docker-login:
+	@echo ${GITHUB_TOKEN} | docker login ${DOCKER_REGISTRY} -u ${GITHUB_USER} --password-stdin
 
 dependencies:
 	@test -f "${GO}" && test -x "${GO}"  || (echo "Missing go binary" && exit 1)
