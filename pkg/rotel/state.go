@@ -240,7 +240,7 @@ func SetUpdateMode(this *state, args []string) (Flag, error) {
 }
 
 func SetVolume(this *state, args []string) (Flag, error) {
-	self.volume_update = false
+	this.volume_update = false
 	if volume, err := strconv.ParseUint(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if volume_ := fmt.Sprint(volume); volume_ != this.volume {
