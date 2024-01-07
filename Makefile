@@ -35,16 +35,17 @@ test: dependencies
 	@echo Running tests
 	@${GO} test ./pkg/...
 
-docker: cmd
-	@echo Building docker image: ${DOCKER_TAG}
+docker:
+	@echo Building docker image: ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
 	@docker build \
 		--tag ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG} \
 		--build-arg VERSION=${BUILD_VERSION} \
 		--build-arg ARCH=${BUILD_ARCH} \
 		--build-arg PLATFORM=${BUILD_PLATFORM} \
 		-f etc/docker/Dockerfile .
-	@echo Pushing image: ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
+	@echo Pushing image
 	@docker push ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
+
 FORCE:
 
 # Login to docker registry
