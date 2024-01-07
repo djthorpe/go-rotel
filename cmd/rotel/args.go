@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	// Package imports
 	rotel "github.com/djthorpe/go-rotel/pkg/rotel"
+	version "github.com/djthorpe/go-rotel/pkg/version"
 
 	// Namespace imports
 	. "github.com/djthorpe/go-errors"
@@ -18,10 +20,11 @@ type Args struct {
 	*flag.FlagSet
 
 	// Flags
-	Topic  string
-	Broker string
-	Qos    int
-	TTY    string
+	Topic   string
+	Broker  string
+	Qos     int
+	TTY     string
+	Version bool
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,6 +58,11 @@ func NewArgs(name string, args []string) (*Args, error) {
 	if self.NArg() > 0 {
 		return nil, ErrBadParameter.Withf("unexpected argument %q", self.Arg(0))
 	}
+	// Print version and exit
+	if self.Version {
+		version.Print(os.Stdout)
+		return nil, ErrHelp
+	}
 
 	return self, nil
 }
@@ -77,6 +85,7 @@ func (self *Args) String() string {
 	if self.TTY != "" {
 		str += fmt.Sprintf(" tty=%q", self.TTY)
 	}
+	str += fmt.Sprintf(" version=%v", self.Version)
 	return str + ">"
 }
 
@@ -88,4 +97,5 @@ func (self *Args) registerFlags() {
 	self.StringVar(&self.Topic, "topic", defaultTopic, "Topic for messages")
 	self.IntVar(&self.Qos, "qos", 0, "MQTT quality of service")
 	self.StringVar(&self.TTY, "tty", rotel.DEFAULT_TTY, "TTY for Rotel device")
+	self.BoolVar(&self.Version, "version", false, "Print version and exit")
 }
