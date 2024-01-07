@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 
+	// Package imports
+	rotel "github.com/djthorpe/go-rotel/pkg/rotel"
+
 	// Namespace imports
 	. "github.com/djthorpe/go-errors"
 )
@@ -18,6 +21,7 @@ type Args struct {
 	Topic  string
 	Broker string
 	Qos    int
+	TTY    string
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,6 +74,9 @@ func (self *Args) String() string {
 		str += fmt.Sprintf(" topic=%q", self.Topic)
 	}
 	str += fmt.Sprintf(" qos=%d", self.Qos)
+	if self.TTY != "" {
+		str += fmt.Sprintf(" tty=%q", self.TTY)
+	}
 	return str + ">"
 }
 
@@ -80,4 +87,5 @@ func (self *Args) registerFlags() {
 	self.StringVar(&self.Broker, "mqtt", defaultBroker, "MQTT broker address")
 	self.StringVar(&self.Topic, "topic", defaultTopic, "Topic for messages")
 	self.IntVar(&self.Qos, "qos", 0, "MQTT quality of service")
+	self.StringVar(&self.TTY, "tty", rotel.DEFAULT_TTY, "TTY for Rotel device")
 }

@@ -17,7 +17,7 @@ type Volume struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewVolume(topic, Id, objectId string) (Component, error) {
+func NewVolume(topic, Id, objectId string) (*Volume, error) {
 	self := new(Volume)
 	if err := self.Init(topic, "number", Id, objectId, "Volume", true, true); err != nil {
 		return nil, err

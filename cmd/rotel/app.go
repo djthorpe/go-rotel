@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
+	"strconv"
+	"sync"
 
 	// Package imports
 	ha "github.com/djthorpe/go-rotel/pkg/ha"
+	rotel "github.com/djthorpe/go-rotel/pkg/rotel"
 	mosquitto "github.com/mutablelogic/go-mosquitto/pkg/mosquitto"
 
 	// Namespace imports
@@ -24,7 +26,8 @@ type App struct {
 	*log.Logger // Embedded logger
 
 	client *mosquitto.Client // MQTT
-	ha     *ha.HA            // Home assistant
+	rotel  *rotel.Rotel
+	ha     *ha.HA // Home assistant
 	qos    int
 	topic  string
 
@@ -46,7 +49,7 @@ type StateChange struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (*App, error) {
+func NewApp(ctx context.Context, prefix, broker string, qos int, topic string, tty string) (*App, error) {
 	self := new(App)
 
 	// Connect to broker
@@ -58,13 +61,21 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 		}
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("MQTT: %w", err)
 	}
 
 	// Home assistant
 	ha, err := ha.New(topic, self.StateCallback)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Home Assistant: %w", err)
+	}
+
+	// Rotel amplifier
+	rotel, err := rotel.NewWithConfig(rotel.Config{
+		TTY: tty,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Rotel: %w", err)
 	}
 
 	// Initialise logger
@@ -74,6 +85,7 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 	self.qos = qos
 	self.client = client
 	self.ha = ha
+	self.rotel = rotel
 
 	// Return success
 	return self, nil
@@ -84,11 +96,22 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 
 // runloop for the rotel app
 func (self *App) Run(ctx context.Context) error {
+	var wg sync.WaitGroup
 	var result error
 
 	// Create channels for events and state changes
 	self.evtch = make(chan *mosquitto.Event, 1)
 	self.statech = make(chan StateChange, 1)
+	rotelch := make(chan rotel.Event, 1)
+
+	// Run rotel amplifier in background
+	wg.Add(1)
+	go func(ctx context.Context) {
+		defer wg.Done()
+		if err := self.rotel.Run(ctx, rotelch); err != nil {
+			result = errors.Join(result, err)
+		}
+	}(ctx)
 
 	// Subscribe to the "status" topic to get online/offline messages
 	self.topicStatusId = self.ha.TopicStatus()
@@ -110,29 +133,19 @@ func (self *App) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	volume.(*ha.Volume).SetRange(0, 50)
+	volume.(*ha.Volume).SetRange(rotel.VOLUME_MIN, rotel.VOLUME_MAX)
 	if err := self.PublishComponent(volume, true); err != nil {
 		return err
 	}
 
 	// Add input source
-	input, err := self.ha.AddInput("rotel_amp00_input", "rotel_amp00", []string{
-		"CD",
-		"COAX1",
-		"COAX2",
-		"OPT1",
-		"OPT2",
-		"PHONO",
-	})
+	source, err := self.ha.AddInput("rotel_amp00_input", "rotel_amp00", rotel.SOURCES)
 	if err != nil {
 		return err
 	}
-	if err := self.PublishComponent(input, true); err != nil {
+	if err := self.PublishComponent(source, true); err != nil {
 		return err
 	}
-
-	// Change state every three seconds
-	timer := time.NewTicker(5 * time.Second)
 
 FOR_LOOP:
 	for {
@@ -149,19 +162,55 @@ FOR_LOOP:
 			} else if err := self.ha.Command(evt.Topic, evt.Data); err != nil {
 				fmt.Println("other event=", evt)
 			}
-		case <-timer.C:
-			if power.State() == "ON" {
-				self.StateCallback(power, []byte("OFF"))
-			} else {
-				self.StateCallback(power, []byte("ON"))
-			}
 		case evt := <-self.statech:
 			self.Logger.Println("publishing", string(evt.Data), "to", evt.Component.StateTopic())
 			if _, err := self.client.Publish(evt.Component.StateTopic(), evt.Data); err != nil {
 				return err
 			}
+			if evt.Component == power {
+				if err := self.rotel.SetPower(string(evt.Data) == "ON"); err != nil {
+					log.Println("error setting power:", err)
+				}
+			}
+			if evt.Component == volume {
+				if value, err := strconv.ParseUint(string(evt.Data), 10, 32); err != nil {
+					log.Println("error parsing volume:", err)
+				} else if err := self.rotel.SetVolume(uint(value)); err != nil {
+					log.Println("error setting volume:", err)
+				}
+			}
+			if evt.Component == source {
+				if err := self.rotel.SetSource(string(evt.Data)); err != nil {
+					log.Println("error setting source:", err)
+				}
+			}
+		case evt := <-rotelch:
+			if evt.Err != nil {
+				self.Logger.Println("rotel error", evt.Err)
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_MODEL) {
+				self.Logger.Println("rotel model=", self.rotel.Model())
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_POWER) {
+				if self.rotel.Power() {
+					self.StateCallback(power, []byte("ON"))
+				} else {
+					self.StateCallback(power, []byte("OFF"))
+				}
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_VOLUME) {
+				str := fmt.Sprintf("%d", self.rotel.Volume())
+				self.StateCallback(volume, []byte(str))
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_SOURCE) {
+				v := self.rotel.Source()
+				self.StateCallback(source, []byte(v))
+			}
 		}
 	}
+
+	// Wait for rotel to finish
+	wg.Wait()
 
 	// Unpublish components
 	for _, component := range self.ha.Components() {
@@ -217,14 +266,10 @@ func (self *App) StateCallback(component ha.Component, data []byte) error {
 		return ErrBadParameter.Withf("invalid component or payload data")
 	}
 
-	self.Logger.Println("setting component state to", string(data), "for", component.StateTopic())
-
 	if component.SetState(string(data)) {
+		self.Logger.Println("setting component state to", string(data), "for", component.StateTopic())
 		payload := []byte(component.State())
-		self.Logger.Println("state change", component.StateTopic(), string(payload))
 		self.statech <- StateChange{component, payload}
-	} else {
-		self.Logger.Println("state change ignored", component.StateTopic(), string(data))
 	}
 
 	// Return success
@@ -238,6 +283,12 @@ func (self *App) String() string {
 	str := "<app"
 	if self.client != nil {
 		str += fmt.Sprintf(" client=%v", self.client)
+	}
+	if self.ha != nil {
+		str += fmt.Sprintf(" ha=%v", self.ha)
+	}
+	if self.rotel != nil {
+		str += fmt.Sprintf(" rotel=%v", self.rotel)
 	}
 	str += fmt.Sprintf(" qos=%d", self.qos)
 	if self.topic != "" {

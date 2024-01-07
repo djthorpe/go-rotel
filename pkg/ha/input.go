@@ -16,7 +16,7 @@ type Input struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewInput(topic, Id, objectId string, options []string) (Component, error) {
+func NewInput(topic, Id, objectId string, options []string) (*Input, error) {
 	self := new(Input)
 	if err := self.Init(topic, "select", Id, objectId, "Input", true, true); err != nil {
 		return nil, err

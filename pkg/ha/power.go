@@ -15,7 +15,7 @@ type PowerButton struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewPowerButton(topic, Id, objectId string) (Component, error) {
+func NewPowerButton(topic, Id, objectId string) (*PowerButton, error) {
 	self := new(PowerButton)
 	if err := self.Init(topic, "switch", Id, objectId, "Power", true, true); err != nil {
 		return nil, err

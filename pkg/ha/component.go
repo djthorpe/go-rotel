@@ -1,7 +1,6 @@
 package ha
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -87,7 +86,6 @@ func (self *component) StateTopic() string {
 // Set the state of the component as a string, return true if changed
 func (self *component) SetState(v string) bool {
 	v = strings.TrimSpace(v)
-	fmt.Printf("SetState: old %q new %q\n", self.state, v)
 	if self.state != v {
 		self.state = v
 		return true
