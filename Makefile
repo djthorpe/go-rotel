@@ -4,8 +4,9 @@ ARCH=$(shell which arch)
 UNAME=$(shell which uname)
 
 # Paths to locations, etc
-DOCKER_REGISTRY = "ghcr.io"
-DOCKER_REPOSITORY := "djthorpe/go-rotel"
+DOCKER_REGISTRY := "ghcr.io"
+DOCKER_USER := "djthorpe"
+DOCKER_REPOSITORY := "${DOCKER_USER}/go-rotel"
 SERVER_MODULE := "github.com/${DOCKER_REPOSITORY}"
 BUILD_DIR := "build"
 BUILD_ARCH := $(shell ${ARCH}  | tr A-Z a-z)
@@ -37,19 +38,19 @@ test: dependencies
 docker: cmd
 	@echo Building docker image: ${DOCKER_TAG}
 	@docker build \
-		--tag ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG} \
+		--tag ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG} \
 		--build-arg VERSION=${BUILD_VERSION} \
 		--build-arg ARCH=${BUILD_ARCH} \
 		--build-arg PLATFORM=${BUILD_PLATFORM} \
 		-f etc/docker/Dockerfile .
-	@echo Pushing image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG}
-	@docker push ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG}
+	@echo Pushing image: ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
+	@docker push ${DOCKER_REGISTRY}/${DOCKER_USER}/${DOCKER_TAG}
 FORCE:
 
 # Login to docker registry
-# GITHUB_USER=XXX GITHUB_TOKEN=YYY make docker-login
+# GITHUB_TOKEN=YYY make docker-login
 docker-login:
-	@echo ${GITHUB_TOKEN} | docker login ${DOCKER_REGISTRY} -u ${GITHUB_USER} --password-stdin
+	@echo ${GITHUB_TOKEN} | docker login ${DOCKER_REGISTRY} -u ${DOCKER_USER} --password-stdin
 
 dependencies:
 	@test -f "${GO}" && test -x "${GO}"  || (echo "Missing go binary" && exit 1)
