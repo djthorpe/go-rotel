@@ -1,57 +1,68 @@
-# Go parameters
-GOCMD=go
-GOINSTALL=$(GOCMD) install
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-GOGEN=$(GOCMD) generate
+# Paths to packages
+GO=$(shell which go)
+ARCH=$(shell which arch)
+UNAME=$(shell which uname)
 
-# App parameters
-GOPI=github.com/djthorpe/gopi
-GOLDFLAGS += -X $(GOPI).GitTag=$(shell git describe --tags)
-GOLDFLAGS += -X $(GOPI).GitBranch=$(shell git name-rev HEAD --name-only --always)
-GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
-GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
-GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
+# Paths to locations, etc
+DOCKER_REGISTRY = "ghcr.io"
+DOCKER_REPOSITORY := "djthorpe/go-rotel"
+SERVER_MODULE := "github.com/${DOCKER_REPOSITORY}"
+BUILD_DIR := "build"
+BUILD_ARCH := $(shell ${ARCH}  | tr A-Z a-z)
+BUILD_PLATFORM := $(shell ${UNAME}  | tr A-Z a-z)
+BUILD_VERSION := $(shell git describe --tags  | sed 's/^v//')
+CMD_DIR := $(wildcard cmd/*)
 
-# Prefix for installation
-PREFIX=/opt/gaffer
-SSLORG=mutablelogic.com
+# Add linker flags
+BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GitSource=${SERVER_MODULE}
+BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GitTag=${BUILD_VERSION}
+BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GitBranch=$(shell git name-rev HEAD --name-only --always)
+BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GitHash=$(shell git rev-parse HEAD)
+BUILD_LD_FLAGS += -X $(SERVER_MODULE)/pkg/version.GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
+BUILD_FLAGS = -ldflags "-s -w $(BUILD_LD_FLAGS)" 
+DOCKER_TAG := rotel-${BUILD_PLATFORM}-${BUILD_ARCH}:${BUILD_VERSION}
 
-all: test build clean
+all: clean cmd
 
-build: rotel-service rotel-client rotel-ctrl
+cmd: $(CMD_DIR)
 
-install: build
-	install -m 775 -d $(PREFIX)
-	install -m 775 -d $(PREFIX)/etc
-	install -m 775 -d $(PREFIX)/sbin
-	install -m 775 -d $(PREFIX)/bin
-	install etc/rotel-service.service $(PREFIX)/etc
-	install $(GOBIN)/rotel-service $(PREFIX)/sbin
-	install $(GOBIN)/rotel-client $(PREFIX)/bin/rotel
-	openssl req -x509 -nodes -newkey rsa:2048 \
-		-keyout "${PREFIX}/etc/selfsigned.key" \
-		-out "${PREFIX}/etc/selfsigned.crt" \
-		-days 9999 -subj "/O=${SSLORG}"
-	echo sudo useradd --system --user-group gopi
-	echo sudo ln -s $(PREFIX)/etc/rotel-service.service /etc/systemd/system
-	echo sudo systemctl enable rotel-service
+$(CMD_DIR): dependencies mkdir
+	@echo Build cmd $(notdir $@)
+	@${GO} build ${BUILD_FLAGS} -o ${BUILD_DIR}/$(notdir $@) ./$@
 
-test: protobuf
-	$(GOTEST) ./...
+test: dependencies
+	@echo Running tests
+	@${GO} test ./pkg/...
 
-protobuf:
-	$(GOGEN) -x ./rpc/...
+docker: cmd
+	@echo Building docker image: ${DOCKER_TAG}
+	@docker build \
+		--tag ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG} \
+		--build-arg VERSION=${BUILD_VERSION} \
+		--build-arg ARCH=${BUILD_ARCH} \
+		--build-arg PLATFORM=${BUILD_PLATFORM} \
+		-f etc/docker/Dockerfile .
+	@echo Pushing image: ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG}
+	@docker push ${DOCKER_REGISTRY}/${DOCKER_REPOSITORY}/${DOCKER_TAG}
+FORCE:
 
-rotel-ctrl:
-	$(GOINSTALL) $(GOFLAGS) ./cmd/rotel-ctrl/...
+# Login to docker registry
+# GITHUB_USER=XXX GITHUB_TOKEN=YYY make docker-login
+docker-login:
+	@echo ${GITHUB_TOKEN} | docker login ${DOCKER_REGISTRY} -u ${GITHUB_USER} --password-stdin
 
-rotel-service: protobuf
-	$(GOINSTALL) $(GOFLAGS) ./cmd/rotel-service/...
+dependencies:
+	@test -f "${GO}" && test -x "${GO}"  || (echo "Missing go binary" && exit 1)
+	@test -f "${ARCH}" && test -x "${ARCH}"  || (echo "Missing arch binary" && exit 1)
+	@test -f "${UNAME}" && test -x "${UNAME}"  || (echo "Missing uname binary" && exit 1)
 
-rotel-client: protobuf
-	$(GOINSTALL) $(GOFLAGS) ./cmd/rotel-client/...
+mkdir:
+	@echo Mkdir ${BUILD_DIR}
+	@install -d ${BUILD_DIR}
 
-clean: 
-	$(GOCLEAN)
+clean:
+	@echo Clean
+	@rm -fr $(BUILD_DIR)
+	@${GO} mod tidy
+	@${GO} clean
+

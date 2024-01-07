@@ -1,14 +1,5 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-*.tmp
-*.sum
-._*
-.smb*
-*.pb.go
 .DS_Store
+build/
+
+
+
