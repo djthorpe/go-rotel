@@ -49,7 +49,7 @@ const (
 
 var (
 	SOURCES = []string{
-		"pc_usb", "cd", "coax1", "coax2", "opt1", "opt2", "aux1", "aux2", "tuner", "photo", "usb", "bluetooth",
+		"pc_usb", "cd", "coax1", "coax2", "opt1", "opt2", "aux1", "aux2", "tuner", "phono", "usb", "bluetooth",
 	}
 )
 
@@ -157,7 +157,7 @@ func (self *Rotel) SetSource(value string) error {
 	switch value {
 	case "pc_usb":
 		return self.writetty("pcusb!")
-	case "cd", "coax1", "coax2", "opt1", "opt2", "aux1", "aux2", "tuner", "photo", "usb", "bluetooth":
+	case "cd", "coax1", "coax2", "opt1", "opt2", "aux1", "aux2", "tuner", "phono", "usb", "bluetooth":
 		return self.writetty(value + "!")
 	default:
 		return ErrBadParameter.Withf("invalid source: %q", value)

@@ -13,17 +13,18 @@ import (
 // TYPES
 
 type state struct {
-	model        string
-	power        string
-	update       string // rs232 update
-	volume, mute string
-	bass, treble string
-	balance      []string
-	source       string
-	freq         string
-	bypass       string
-	speaker      string
-	dimmer       string
+	model         string
+	power         string
+	update        string // rs232 update
+	volume, mute  string
+	bass, treble  string
+	balance       []string
+	source        string
+	freq          string
+	bypass        string
+	speaker       string
+	dimmer        string
+	volume_update bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +165,7 @@ func (this *state) Update() string {
 		return "power?"
 	case this.power != "on": // When power is off, don't read other values
 		return ""
-	case this.volume == "":
+	case this.volume == "" || this.volume == "0" || this.volume_update == true:
 		return "volume?"
 	case this.source == "":
 		return "source?"
@@ -216,11 +217,18 @@ func SetModel(this *state, args []string) (Flag, error) {
 func SetPower(this *state, args []string) (Flag, error) {
 	if args[0] == "" {
 		return 0, ErrBadParameter.With("SetPower")
-	} else if this.power != args[0] {
-		this.power = args[0]
-		return ROTEL_FLAG_POWER, nil
+	} else if this.power == args[0] {
+		return 0, nil
 	}
-	return 0, nil
+	this.power = args[0]
+
+	// If the power is switched on, then update the volume
+	if this.power == "on" {
+		this.volume_update = true
+	}
+
+	// Return the power changed flag
+	return ROTEL_FLAG_POWER, nil
 }
 
 func SetUpdateMode(this *state, args []string) (Flag, error) {
@@ -232,6 +240,7 @@ func SetUpdateMode(this *state, args []string) (Flag, error) {
 }
 
 func SetVolume(this *state, args []string) (Flag, error) {
+	self.volume_update = false
 	if volume, err := strconv.ParseUint(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if volume_ := fmt.Sprint(volume); volume_ != this.volume {
