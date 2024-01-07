@@ -17,9 +17,13 @@ type HA struct {
 	HAStatus
 
 	topic      string               // Base topic
+	callback   Callback             // Callback for state changes
 	components map[string]Component // home assistant components
 	commands   map[string]Component // home assistant command topics
 }
+
+// Callback which updates the state remotely when it has changed locally
+type Callback func(Component, []byte) error
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBALS
@@ -43,7 +47,7 @@ const (
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func New(topic string) (*HA, error) {
+func New(topic string, callback Callback) (*HA, error) {
 	self := new(HA)
 
 	// Set topic
@@ -56,6 +60,9 @@ func New(topic string) (*HA, error) {
 	// Create a map of configured components
 	self.components = make(map[string]Component)
 	self.commands = make(map[string]Component)
+
+	// Set the callback
+	self.callback = callback
 
 	// Return success
 	return self, nil
@@ -157,9 +164,13 @@ func (self *HA) Command(topic string, data []byte) error {
 	if !exists {
 		return ErrNotFound.Withf("command topic %q", topic)
 	}
-	if component.SetState(string(data)) {
-		fmt.Println("State has changed:", component, string(data))
+	if self.callback != nil {
+		return self.callback(component, data)
+	} else {
+		component.SetState(string(data))
 	}
+
+	// Return success
 	return nil
 }
 

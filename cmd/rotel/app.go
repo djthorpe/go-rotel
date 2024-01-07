@@ -27,7 +27,12 @@ type App struct {
 	ha     *ha.HA            // Home assistant
 	qos    int
 	topic  string
-	ch     chan *mosquitto.Event
+
+	// Event channel
+	evtch chan *mosquitto.Event
+
+	// State change channel
+	statech chan StateChange
 
 	// Online/Offline messages
 	topicStatusId string
@@ -35,7 +40,7 @@ type App struct {
 
 type StateChange struct {
 	Component ha.Component
-	State     string
+	Data      []byte
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +52,9 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 	// Connect to broker
 	client, err := mosquitto.New(ctx, broker, func(evt *mosquitto.Event) {
 		if evt.Type == MOSQ_FLAG_EVENT_MESSAGE {
-			self.ch <- evt
+			if self.evtch != nil {
+				self.evtch <- evt
+			}
 		}
 	})
 	if err != nil {
@@ -55,7 +62,7 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 	}
 
 	// Home assistant
-	ha, err := ha.New(topic)
+	ha, err := ha.New(topic, self.StateCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +74,6 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 	self.qos = qos
 	self.client = client
 	self.ha = ha
-	self.ch = make(chan *mosquitto.Event)
 
 	// Return success
 	return self, nil
@@ -76,11 +82,13 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string) (
 ///////////////////////////////////////////////////////////////////////////////
 // RUN
 
+// runloop for the rotel app
 func (self *App) Run(ctx context.Context) error {
 	var result error
 
-	// Create a channel for state changes
-	var statech = make(chan StateChange, 1)
+	// Create channels for events and state changes
+	self.evtch = make(chan *mosquitto.Event, 1)
+	self.statech = make(chan StateChange, 1)
 
 	// Subscribe to the "status" topic to get online/offline messages
 	self.topicStatusId = self.ha.TopicStatus()
@@ -131,7 +139,7 @@ FOR_LOOP:
 		select {
 		case <-ctx.Done():
 			break FOR_LOOP
-		case evt := <-self.ch:
+		case evt := <-self.evtch:
 			if evt.Topic == self.topicStatusId {
 				if err := self.ha.SetStatus(string(evt.Data)); err != nil {
 					log.Println("error setting status:", err)
@@ -143,17 +151,14 @@ FOR_LOOP:
 			}
 		case <-timer.C:
 			if power.State() == "ON" {
-				statech <- StateChange{power, "OFF"}
+				self.StateCallback(power, []byte("OFF"))
 			} else {
-				statech <- StateChange{power, "ON"}
+				self.StateCallback(power, []byte("ON"))
 			}
-		case evt := <-statech:
-			if evt.Component.SetState(evt.State) {
-				self.Logger.Println("publishing", evt.State, "to", evt.Component.StateTopic())
-				data := []byte(evt.Component.State())
-				if _, err := self.client.Publish(evt.Component.StateTopic(), data); err != nil {
-					return err
-				}
+		case evt := <-self.statech:
+			self.Logger.Println("publishing", string(evt.Data), "to", evt.Component.StateTopic())
+			if _, err := self.client.Publish(evt.Component.StateTopic(), evt.Data); err != nil {
+				return err
 			}
 		}
 	}
@@ -171,8 +176,8 @@ FOR_LOOP:
 	}
 
 	// Close channels
-	close(statech)
-	close(self.ch)
+	close(self.statech)
+	close(self.evtch)
 
 	// Return any errors
 	return result
@@ -207,12 +212,19 @@ func (self *App) PublishComponent(component ha.Component, on bool) error {
 	return nil
 }
 
-func (self *App) PublishState(component ha.Component, state string) error {
-	if component == nil || state == "" {
-		return ErrBadParameter.Withf("invalid component or state")
+func (self *App) StateCallback(component ha.Component, data []byte) error {
+	if component == nil || data == nil {
+		return ErrBadParameter.Withf("invalid component or payload data")
 	}
-	if component.StateTopic() == "" {
-		return ErrInternalAppError.Withf("component %q has no state topic", component.Id())
+
+	self.Logger.Println("setting component state to", string(data), "for", component.StateTopic())
+
+	if component.SetState(string(data)) {
+		payload := []byte(component.State())
+		self.Logger.Println("state change", component.StateTopic(), string(payload))
+		self.statech <- StateChange{component, payload}
+	} else {
+		self.Logger.Println("state change ignored", component.StateTopic(), string(data))
 	}
 
 	// Return success
