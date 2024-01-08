@@ -78,8 +78,8 @@ Contributions are welcome. Please raise an issue or pull request on the GitHub r
     * ROTEL_FLAG_BYPASS
     * ROTEL_FLAG_SPEAKER
     * ROTEL_FLAG_DIMMER
+  * Implement the following push buttons: play, stop, pause, track_next, track_prev, mute_toggle, vol_up, vol_down, bass_up, bass_down, bass_reset, treble_up, treble_down, treble_reset, balance_left, balance_right, balance_reset, speaker_a_toggle, speaker_b_toggle, dimmer_toggle, power_toggle
   * Code is only tested on an A12 amplifier, but should work on other models
   * A github workflow should be used to build the containers on different
     platforms and architectures
-  * Only one amplifier and serial port can be controlled
-  * A REST or gRPC interface could be added to the code
+  * Only one amplifier and serial port can be controlled per host
