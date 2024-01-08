@@ -69,13 +69,17 @@ state_color: true
 
 Contributions are welcome. Please raise an issue or pull request on the GitHub repository. The limitations at the me moment are,
 
-  * Only one amplifier and serial port can be controlled
+  * A -name parameter should uniquely identify the amplifier (at the moment it's hard-coded to "amp00")
   * Only the power, volume and source are exposed (it wouldn't be difficult to expose   more controls). These are the other controls which could be added:
     * ROTEL_FLAG_MUTE
-	  * ROTEL_FLAG_BASS
-	  * ROTEL_FLAG_TREBLE
-	  * ROTEL_FLAG_BALANCE
-	  * ROTEL_FLAG_BYPASS
-	  * ROTEL_FLAG_SPEAKER
-	  * ROTEL_FLAG_DIMMER
+    * ROTEL_FLAG_BASS
+    * ROTEL_FLAG_TREBLE
+    * ROTEL_FLAG_BALANCE
+    * ROTEL_FLAG_BYPASS
+    * ROTEL_FLAG_SPEAKER
+    * ROTEL_FLAG_DIMMER
   * Code is only tested on an A12 amplifier, but should work on other models
+  * A github workflow should be used to build the containers on different
+    platforms and architectures
+  * Only one amplifier and serial port can be controlled
+  * A REST or gRPC interface could be added to the code
