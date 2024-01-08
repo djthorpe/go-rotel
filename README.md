@@ -65,7 +65,17 @@ show_header_toggle: false
 state_color: true
 ```
 
-## Contributions
+## Contributions, etc
 
-Contributions are welcome. Please raise an issue or pull request on the GitHub repository.
+Contributions are welcome. Please raise an issue or pull request on the GitHub repository. The limitations at the me moment are,
 
+  * Only one amplifier and serial port can be controlled
+  * Only the power, volume and source are exposed (it wouldn't be difficult to expose   more controls). These are the other controls which could be added:
+    * ROTEL_FLAG_MUTE
+	  * ROTEL_FLAG_BASS
+	  * ROTEL_FLAG_TREBLE
+	  * ROTEL_FLAG_BALANCE
+	  * ROTEL_FLAG_BYPASS
+	  * ROTEL_FLAG_SPEAKER
+	  * ROTEL_FLAG_DIMMER
+  * Code is only tested on an A12 amplifier, but should work on other models
