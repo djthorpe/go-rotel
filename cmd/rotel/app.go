@@ -133,7 +133,7 @@ func (self *App) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := self.PublishComponent(power, true); err != nil {
+	if err := self.PublishComponent(speakerA, true); err != nil {
 		return err
 	}
 
@@ -142,7 +142,7 @@ func (self *App) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := self.PublishComponent(power, true); err != nil {
+	if err := self.PublishComponent(speakerB, true); err != nil {
 		return err
 	}
 
