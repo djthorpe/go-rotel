@@ -139,18 +139,39 @@ func (this *state) Freq() string {
 	}
 }
 
-func (this *state) Speakers() []string {
+func (this *state) Speakers() string {
+	if this.power == "on" {
+		return this.speaker
+	}
+	return ""
+}
+
+func (this *state) SpeakerA() bool {
 	if this.power == "on" {
 		switch this.speaker {
 		case "a":
-			return []string{"A"}
+			return true
 		case "b":
-			return []string{"B"}
+			return false
 		case "a_b":
-			return []string{"A", "B"}
+			return true
 		}
 	}
-	return nil
+	return false
+}
+
+func (this *state) SpeakerB() bool {
+	if this.power == "on" {
+		switch this.speaker {
+		case "a":
+			return false
+		case "b":
+			return true
+		case "a_b":
+			return true
+		}
+	}
+	return false
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -147,6 +147,19 @@ func (self *Rotel) SetPower(state bool) error {
 	}
 }
 
+func (self *Rotel) SetSpeaker(state bool, speaker string) error {
+	// Cannot set value when power is off
+	if !self.Power() {
+		return ErrOutOfOrder.With("SetSpeaker")
+	}
+
+	if state {
+		return self.writetty("speaker_" + speaker + "_on!")
+	} else {
+		return self.writetty("speaker_" + speaker + "_off!")
+	}
+}
+
 func (self *Rotel) SetSource(value string) error {
 	// Cannot set value when power is off
 	if !self.Power() {
