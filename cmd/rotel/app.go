@@ -101,7 +101,7 @@ func (self *App) Run(ctx context.Context) error {
 
 	// Create channels for events and state changes
 	self.evtch = make(chan *mosquitto.Event, 1)
-	self.statech = make(chan StateChange, 1)
+	self.statech = make(chan StateChange, 2)
 	rotelch := make(chan rotel.Event, 1)
 
 	// Run rotel amplifier in background
