@@ -21,7 +21,7 @@ func main() {
 
 	// Create a context which cancels on CTRL+C
 	ctx := HandleSignal()
-	app, err := NewApp(ctx, flags.Name(), flags.Broker, flags.Qos, flags.Topic, flags.TTY)
+	app, err := NewApp(ctx, flags.Name(), flags.Broker, flags.Credentials, flags.Qos, flags.Topic, flags.TTY)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)

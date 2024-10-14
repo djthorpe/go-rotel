@@ -20,19 +20,21 @@ type Args struct {
 	*flag.FlagSet
 
 	// Flags
-	Topic   string
-	Broker  string
-	Qos     int
-	TTY     string
-	Version bool
+	Topic       string
+	Broker      string
+	Credentials string
+	Qos         int
+	TTY         string
+	Version     bool
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBALS
 
 const (
-	defaultBroker = "localhost:1833"
-	defaultTopic  = "homeassistant"
+	defaultBroker      = "localhost:1833"
+	defaultTopic       = "homeassistant"
+	defaultCredentials = ""
 )
 
 var (
@@ -56,7 +58,7 @@ func NewArgs(name string, args []string) (*Args, error) {
 	}
 	// No arguments are allowed
 	if self.NArg() > 0 {
-		return nil, ErrBadParameter.Withf("unexpected argument %q", self.Arg(0))
+		return nil, ErrBadParameter.Withf("unexpected argument: %q", self.Arg(0))
 	}
 	// Print version and exit
 	if self.Version {
@@ -94,6 +96,7 @@ func (self *Args) String() string {
 
 func (self *Args) registerFlags() {
 	self.StringVar(&self.Broker, "mqtt", defaultBroker, "MQTT broker address")
+	self.StringVar(&self.Credentials, "credentials", defaultCredentials, "MQTT credentails (user:password)")
 	self.StringVar(&self.Topic, "topic", defaultTopic, "Topic for messages")
 	self.IntVar(&self.Qos, "qos", 0, "MQTT quality of service")
 	self.StringVar(&self.TTY, "tty", rotel.DEFAULT_TTY, "TTY for Rotel device")

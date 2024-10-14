@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	// Package imports
@@ -49,25 +50,32 @@ type StateChange struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewApp(ctx context.Context, prefix, broker string, qos int, topic string, tty string) (*App, error) {
+func NewApp(ctx context.Context, prefix, broker string, credentials string, qos int, topic string, tty string) (*App, error) {
 	self := new(App)
 
-	// Connect to broker
-	client, err := mosquitto.New(ctx, broker, func(evt *mosquitto.Event) {
+	// Broker configuration
+	cfg := mosquitto.NewConfigWithBroker(broker).WithCallback(func(evt *mosquitto.Event) {
 		if evt.Type == MOSQ_FLAG_EVENT_MESSAGE {
 			if self.evtch != nil {
 				self.evtch <- evt
 			}
 		}
 	})
+	if credentials := strings.TrimSpace(credentials); credentials != "" {
+		userpass := strings.SplitN(credentials, ":", 2)
+		cfg = cfg.WithCredentials(userpass[0], userpass[1])
+	}
+
+	// Connect to broker
+	client, err := mosquitto.NewWithConfig(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("MQTT: %w", err)
+		return nil, fmt.Errorf("MQTT: %q: %w", broker, err)
 	}
 
 	// Home assistant
 	ha, err := ha.New(topic, self.StateCallback)
 	if err != nil {
-		return nil, fmt.Errorf("Home Assistant: %w", err)
+		return nil, fmt.Errorf("Home Assistant: %q: %w", topic, err)
 	}
 
 	// Rotel amplifier
@@ -75,7 +83,7 @@ func NewApp(ctx context.Context, prefix, broker string, qos int, topic string, t
 		TTY: tty,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Rotel: %w", err)
+		return nil, fmt.Errorf("Rotel: %q: %w", tty, err)
 	}
 
 	// Initialise logger
