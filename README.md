@@ -4,23 +4,25 @@ The code here is for bridging a Rotel Amplifier to MQTT, for integration into Ho
 where the Rotel Amplifier is connected to the serial port of a host machine. The requirements
 are:
 
-  * A Linux host connected to the Rotel Amplifier via a RS232 port
-  * A MQTT broker running on the same machine or on the network
-  * Docker installed on the host machine
+* A Linux host connected to the Rotel Amplifier via a RS232 port
+* A MQTT broker running on the same machine or on the network
+* Docker installed on the host machine
 
 To run the docker container on an ARM64 host,
 
-```
+```bash
 docker run --rm --name rotel --device=/dev/ttyUSB1 \
-  ghcr.io/djthorpe/rotel-linux-aarch64:1.0.7 \
-  rotel -mqtt localhost:1883 -tty /dev/ttyUSB1
+  ghcr.io/djthorpe/rotel-linux-aarch64:1.0.9 \
+  rotel -mqtt ipaddress:1883 -tty /dev/ttyUSB1
 ```
 
-This assumes that the serial port is `/dev/ttyUSB1` and the MQTT broker is running on the same
-machine. The command line arguments for the rotel command are:
+This assumes that the serial port is `/dev/ttyUSB1` and the MQTT broker is running on a machine
+with a specific ip address and port 1883. The command line arguments for the rotel command are:
 
-```
+```bash
 Usage of rotel:
+  -credentials string
+    	MQTT credentails (user:password)
   -mqtt string
     	MQTT broker address (default "localhost:1833")
   -qos int
