@@ -82,8 +82,7 @@ jobs:
       - name: Create
         run: |
           docker manifest create ${{ needs.var.outputs.image }}:${{ matrix.tag }} \
-            --amend ${{ needs.var.outputs.image }}-linux-amd64:${{ needs.var.outputs.tag }} \
-            --amend ${{ needs.var.outputs.image }}-linux-arm64:${{ needs.var.outputs.tag }}
+            --amend ${{ needs.var.outputs.image }}-linux-amd64:${{ needs.var.outputs.tag }}
       - name: Annotate
         run: |
           docker manifest annotate --arch amd64 --os linux \
