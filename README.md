@@ -12,7 +12,7 @@ To run the docker container on an ARM64 host,
 
 ```bash
 docker run --rm --name rotel --device=/dev/ttyUSB1 \
-  ghcr.io/djthorpe/rotel-linux-aarch64:1.0.7 \
+  ghcr.io/djthorpe/go-rotel-linux-arm64:1.0.12 \
   rotel -mqtt ipaddress:1883 -tty /dev/ttyUSB1
 ```
 
