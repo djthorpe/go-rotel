@@ -109,7 +109,7 @@ func (self *App) Run(ctx context.Context) error {
 
 	// Create channels for events and state changes
 	self.evtch = make(chan *mosquitto.Event, 1)
-	self.statech = make(chan StateChange, 1)
+	self.statech = make(chan StateChange, 2)
 	rotelch := make(chan rotel.Event, 1)
 
 	// Run rotel amplifier in background
@@ -128,7 +128,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add a power button
-	power, err := self.ha.AddPowerButton("rotel_amp00_power", "rotel_amp00")
+	power, err := self.ha.AddPowerButton("rotel_amp00_power", "rotel_amp00_power")
 	if err != nil {
 		return err
 	}
@@ -136,8 +136,26 @@ func (self *App) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Add speaker A
+	speakerA, err := self.ha.AddSpeaker("rotel_amp00_speaker_a", "rotel_amp00_speaker_a", "Speaker A")
+	if err != nil {
+		return err
+	}
+	if err := self.PublishComponent(speakerA, true); err != nil {
+		return err
+	}
+
+	// Add speaker B
+	speakerB, err := self.ha.AddSpeaker("rotel_amp00_speaker_b", "rotel_amp00_speaker_b", "Speaker B")
+	if err != nil {
+		return err
+	}
+	if err := self.PublishComponent(speakerB, true); err != nil {
+		return err
+	}
+
 	// Add a volume slider
-	volume, err := self.ha.AddVolume("rotel_amp00_volume", "rotel_amp00")
+	volume, err := self.ha.AddVolume("rotel_amp00_volume", "rotel_amp00_volume")
 	if err != nil {
 		return err
 	}
@@ -147,7 +165,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add input source
-	source, err := self.ha.AddInput("rotel_amp00_input", "rotel_amp00", rotel.SOURCES)
+	source, err := self.ha.AddInput("rotel_amp00_input", "rotel_amp00_input", rotel.SOURCES)
 	if err != nil {
 		return err
 	}
@@ -180,6 +198,16 @@ FOR_LOOP:
 					log.Println("error setting power:", err)
 				}
 			}
+			if evt.Component == speakerA {
+				if err := self.rotel.SetSpeaker(string(evt.Data) == "ON", "a"); err != nil {
+					log.Println("error setting speaker A:", err)
+				}
+			}
+			if evt.Component == speakerB {
+				if err := self.rotel.SetSpeaker(string(evt.Data) == "ON", "b"); err != nil {
+					log.Println("error setting speaker B:", err)
+				}
+			}
 			if evt.Component == volume {
 				if value, err := strconv.ParseUint(string(evt.Data), 10, 32); err != nil {
 					log.Println("error parsing volume:", err)
@@ -204,6 +232,19 @@ FOR_LOOP:
 					self.StateCallback(power, []byte("ON"))
 				} else {
 					self.StateCallback(power, []byte("OFF"))
+				}
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_SPEAKER) {
+				if self.rotel.SpeakerA() {
+					self.StateCallback(speakerA, []byte("ON"))
+				} else {
+					self.StateCallback(speakerA, []byte("OFF"))
+				}
+
+				if self.rotel.SpeakerB() {
+					self.StateCallback(speakerB, []byte("ON"))
+				} else {
+					self.StateCallback(speakerB, []byte("OFF"))
 				}
 			}
 			if evt.Flag.Is(rotel.ROTEL_FLAG_VOLUME) {
