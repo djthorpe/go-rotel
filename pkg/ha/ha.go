@@ -141,6 +141,17 @@ func (self *HA) AddVolume(id, object_id string) (Component, error) {
 	return component, nil
 }
 
+func (self *HA) AddSlider(id, object_id, name string) (Component, error) {
+	component, err := NewSlider(self.topic, id, object_id, name)
+	if err != nil {
+		return nil, err
+	}
+	if err := self.AddComponent(component); err != nil {
+		return nil, err
+	}
+	return component, nil
+}
+
 func (self *HA) AddInput(id, object_id string, options []string) (Component, error) {
 	component, err := NewInput(self.topic, id, object_id, options)
 	if err != nil {

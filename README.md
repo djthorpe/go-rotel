@@ -12,7 +12,7 @@ To run the docker container on an ARM64 host,
 
 ```bash
 docker run --rm --name rotel --device=/dev/ttyUSB1 \
-  ghcr.io/djthorpe/go-rotel-linux-arm64:1.0.12 \
+  ghcr.io/djthorpe/go-rotel-linux-arm64:1.0.13 \
   rotel -mqtt ipaddress:1883 -tty /dev/ttyUSB1
 ```
 
@@ -84,8 +84,6 @@ Contributions are welcome. Please raise an issue or pull request on the GitHub r
 * A -name parameter should uniquely identify the amplifier (at the moment it's hard-coded to "amp00")
 * Only the power, volume, source and speaker are exposed (it wouldn't be difficult to expose more controls). These are the other controls which could be added:
   * ROTEL_FLAG_MUTE
-  * ROTEL_FLAG_BASS
-  * ROTEL_FLAG_TREBLE
   * ROTEL_FLAG_BALANCE
   * ROTEL_FLAG_BYPASS
   * ROTEL_FLAG_DIMMER
