@@ -1,7 +1,7 @@
 # Paths to packages
-GO=$(shell which go)
-DOCKER=$(shell which docker)
-GIT=$(shell which git)
+GO ?= $(shell which go)
+DOCKER ?= $(shell which docker)
+GIT ?= $(shell which git)
 
 # Set OS and Architecture
 ARCH ?= $(shell arch | tr A-Z a-z | sed 's/x86_64/amd64/' | sed 's/i386/amd64/' | sed 's/armv7l/arm/' | sed 's/aarch64/arm64/')
@@ -66,7 +66,7 @@ go-dep:
 # go mod tidy
 go-tidy: go-dep
 	@echo Tidy
-	@go mod tidy
+	@${GO} mod tidy
 
 mkdir:
 	@echo Mkdir ${BUILD_DIR}
