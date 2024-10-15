@@ -7,7 +7,7 @@ GIT ?= $(shell which git)
 ARCH ?= $(shell arch | tr A-Z a-z | sed 's/x86_64/amd64/' | sed 's/i386/amd64/' | sed 's/armv7l/arm/' | sed 's/aarch64/arm64/')
 OS ?= $(shell uname | tr A-Z a-z)
 VERSION ?= $(shell git describe --tags --always | sed 's/^v//')
-DOCKER_REGISTRY ?= ghcr.io/mutablelogic
+DOCKER_REGISTRY ?= ghcr.io/djthorpe
 
 # Set docker tag, etc
 BUILD_TAG := ${DOCKER_REGISTRY}/go-rotel-${OS}-${ARCH}:${VERSION}
