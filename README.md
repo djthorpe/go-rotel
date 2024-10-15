@@ -24,8 +24,8 @@ docker run --rm --name rotel --device=/dev/ttyUSB1 \
   rotel -mqtt ipaddress:1883 -tty /dev/ttyUSB1
 ```
 
-This assumes that the serial port is `/dev/ttyUSB1` and the MQTT broker is running on the same
-machine. The command line arguments for the rotel command are:
+This assumes that the serial port is `/dev/ttyUSB1` and the MQTT broker is running on a machine
+with a specific ip address and port 1883. The command line arguments for the rotel command are:
 
 ```bash
 Usage of rotel:

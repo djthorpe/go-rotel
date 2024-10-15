@@ -119,6 +119,17 @@ func (self *HA) AddPowerButton(id, object_id string) (Component, error) {
 	return component, nil
 }
 
+func (self *HA) AddSpeaker(id, object_id string, speakerName string) (Component, error) {
+	component, err := NewSpeaker(self.topic, id, object_id, speakerName)
+	if err != nil {
+		return nil, err
+	}
+	if err := self.AddComponent(component); err != nil {
+		return nil, err
+	}
+	return component, nil
+}
+
 func (self *HA) AddVolume(id, object_id string) (Component, error) {
 	component, err := NewVolume(self.topic, id, object_id)
 	if err != nil {
