@@ -1,3 +1,6 @@
+ARG OS
+ARG ARCH
+
 FROM --platform=${OS}/${ARCH} golang:1.21-bullseye AS builder
 ARG OS
 ARG ARCH
