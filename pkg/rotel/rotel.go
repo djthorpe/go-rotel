@@ -109,7 +109,7 @@ FOR_LOOP:
 		case <-ctx.Done():
 			break FOR_LOOP
 		case <-timer.C:
-			if cmd := self.state.Update(); cmd != "" {
+			if cmd := self.state.Update(false); cmd != "" {
 				if err := self.writetty(cmd); err != nil {
 					send(ch, Event{ROTEL_FLAG_NONE, fmt.Errorf("writetty: %w", err)})
 				}

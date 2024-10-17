@@ -178,15 +178,15 @@ func (this *state) SpeakerB() bool {
 // PUBLIC METHODS
 
 // Update returns a query to get state of an unknown value
-func (this *state) Update() string {
+func (this *state) Update(force bool) string {
 	switch {
 	case this.model == "":
 		return "model?"
-	case this.power == "":
+	case this.power == "" || force:
 		return "power?"
 	case this.power != "on": // When power is off, don't read other values
 		return ""
-	case this.volume == "" || this.volume == "0" || this.volume_update == true:
+	case this.volume == "" || this.volume == "0" || this.volume_update:
 		return "volume?"
 	case this.source == "":
 		return "source?"

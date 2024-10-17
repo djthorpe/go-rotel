@@ -31,6 +31,7 @@ type App struct {
 	ha     *ha.HA // Home assistant
 	qos    int
 	topic  string
+	id     string
 
 	// Event channel
 	evtch chan *mosquitto.Event
@@ -50,7 +51,7 @@ type StateChange struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewApp(ctx context.Context, prefix, broker string, credentials string, qos int, topic string, tty string) (*App, error) {
+func NewApp(ctx context.Context, prefix, broker, credentials, id string, qos int, topic string, tty string) (*App, error) {
 	self := new(App)
 
 	// Broker configuration
@@ -94,6 +95,7 @@ func NewApp(ctx context.Context, prefix, broker string, credentials string, qos 
 	self.client = client
 	self.ha = ha
 	self.rotel = rotel
+	self.id = fmt.Sprintf("%s_%s", "rotel", strings.TrimSpace(id))
 
 	// Return success
 	return self, nil
@@ -128,7 +130,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add a power button
-	power, err := self.ha.AddPowerButton("rotel_amp00_power", "rotel_amp00_power")
+	power, err := self.ha.AddPowerButton(self.id, "power")
 	if err != nil {
 		return err
 	}
@@ -137,7 +139,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add speaker A
-	speakerA, err := self.ha.AddSpeaker("rotel_amp00_speaker_a", "rotel_amp00_speaker_a", "Speaker A")
+	speakerA, err := self.ha.AddSpeaker(self.id, "speaker_a", "Speaker A")
 	if err != nil {
 		return err
 	}
@@ -146,7 +148,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add speaker B
-	speakerB, err := self.ha.AddSpeaker("rotel_amp00_speaker_b", "rotel_amp00_speaker_b", "Speaker B")
+	speakerB, err := self.ha.AddSpeaker(self.id, "speaker_b", "Speaker B")
 	if err != nil {
 		return err
 	}
@@ -155,7 +157,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add a volume slider
-	volume, err := self.ha.AddVolume("rotel_amp00_volume", "rotel_amp00_volume")
+	volume, err := self.ha.AddVolume(self.id, "volume")
 	if err != nil {
 		return err
 	}
@@ -165,7 +167,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add tone sliders
-	bass, err := self.ha.AddSlider("rotel_amp00_bass", "rotel_amp00_bass", "Bass")
+	bass, err := self.ha.AddSlider(self.id, "bass", "Bass")
 	if err != nil {
 		return err
 	}
@@ -173,7 +175,7 @@ func (self *App) Run(ctx context.Context) error {
 	if err := self.PublishComponent(bass, true); err != nil {
 		return err
 	}
-	treble, err := self.ha.AddSlider("rotel_amp00_treble", "rotel_amp00_treble", "Treble")
+	treble, err := self.ha.AddSlider(self.id, "treble", "Treble")
 	if err != nil {
 		return err
 	}
@@ -183,7 +185,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add input source
-	source, err := self.ha.AddInput("rotel_amp00_input", "rotel_amp00_input", rotel.SOURCES)
+	source, err := self.ha.AddInput(self.id, "input", rotel.SOURCES)
 	if err != nil {
 		return err
 	}
@@ -202,14 +204,6 @@ FOR_LOOP:
 					log.Println("error setting status:", err)
 				} else {
 					log.Println("Home assistant status has changed:", self.ha)
-
-					// Re-publish all component configurations
-					for _, component := range self.ha.Components() {
-						if err := self.PublishComponent(component, true); err != nil {
-							log.Println("error publishing componenent:", err)
-						}
-					}
-
 					// TODO: Get all latest rotel state
 				}
 			} else if err := self.ha.Command(evt.Topic, evt.Data); err != nil {

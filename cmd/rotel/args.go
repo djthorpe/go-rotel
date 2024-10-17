@@ -23,6 +23,7 @@ type Args struct {
 	Topic       string
 	Broker      string
 	Credentials string
+	Id          string
 	Qos         int
 	TTY         string
 	Version     bool
@@ -34,6 +35,7 @@ type Args struct {
 const (
 	defaultBroker      = "localhost:1833"
 	defaultTopic       = "homeassistant"
+	defaultIdentifier  = "amp00"
 	defaultCredentials = ""
 )
 
@@ -96,8 +98,9 @@ func (self *Args) String() string {
 
 func (self *Args) registerFlags() {
 	self.StringVar(&self.Broker, "mqtt", defaultBroker, "MQTT broker address")
-	self.StringVar(&self.Credentials, "credentials", defaultCredentials, "MQTT credentails (user:password)")
+	self.StringVar(&self.Credentials, "credentials", defaultCredentials, "MQTT credentials (user:password)")
 	self.StringVar(&self.Topic, "topic", defaultTopic, "Topic for messages")
+	self.StringVar(&self.Id, "id", defaultIdentifier, "Unique identifier for Rotel device")
 	self.IntVar(&self.Qos, "qos", 0, "MQTT quality of service")
 	self.StringVar(&self.TTY, "tty", rotel.DEFAULT_TTY, "TTY for Rotel device")
 	self.BoolVar(&self.Version, "version", false, "Print version and exit")
