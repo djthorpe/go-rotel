@@ -25,7 +25,7 @@ COPY --from=builder /usr/src/app/build/* /usr/local/bin/
 COPY etc/docker/server-entrypoint.sh .
 
 # Labels
-LABEL org.opencontainers.image.source=${SOURCE}
+LABEL org.opencontainers.image.source=https://${SOURCE}
 
 # Entrypoint when running the server
 ENTRYPOINT [ "/server-entrypoint.sh" ]
