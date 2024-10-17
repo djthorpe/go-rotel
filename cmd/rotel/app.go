@@ -31,6 +31,7 @@ type App struct {
 	ha     *ha.HA // Home assistant
 	qos    int
 	topic  string
+	id     string
 
 	// Event channel
 	evtch chan *mosquitto.Event
@@ -50,7 +51,7 @@ type StateChange struct {
 ///////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewApp(ctx context.Context, prefix, broker string, credentials string, qos int, topic string, tty string) (*App, error) {
+func NewApp(ctx context.Context, prefix, broker, credentials, id string, qos int, topic string, tty string) (*App, error) {
 	self := new(App)
 
 	// Broker configuration
@@ -94,6 +95,7 @@ func NewApp(ctx context.Context, prefix, broker string, credentials string, qos 
 	self.client = client
 	self.ha = ha
 	self.rotel = rotel
+	self.id = fmt.Sprintf("%s_%s", "rotel", strings.TrimSpace(id))
 
 	// Return success
 	return self, nil
@@ -128,7 +130,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add a power button
-	power, err := self.ha.AddPowerButton("rotel_amp00_power", "rotel_amp00_power")
+	power, err := self.ha.AddPowerButton(self.id, "power")
 	if err != nil {
 		return err
 	}
@@ -137,7 +139,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add speaker A
-	speakerA, err := self.ha.AddSpeaker("rotel_amp00_speaker_a", "rotel_amp00_speaker_a", "Speaker A")
+	speakerA, err := self.ha.AddSpeaker(self.id, "speaker_a", "Speaker A")
 	if err != nil {
 		return err
 	}
@@ -146,7 +148,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add speaker B
-	speakerB, err := self.ha.AddSpeaker("rotel_amp00_speaker_b", "rotel_amp00_speaker_b", "Speaker B")
+	speakerB, err := self.ha.AddSpeaker(self.id, "speaker_b", "Speaker B")
 	if err != nil {
 		return err
 	}
@@ -155,7 +157,7 @@ func (self *App) Run(ctx context.Context) error {
 	}
 
 	// Add a volume slider
-	volume, err := self.ha.AddVolume("rotel_amp00_volume", "rotel_amp00_volume")
+	volume, err := self.ha.AddVolume(self.id, "volume")
 	if err != nil {
 		return err
 	}
@@ -164,8 +166,26 @@ func (self *App) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Add tone sliders
+	bass, err := self.ha.AddSlider(self.id, "bass", "Bass")
+	if err != nil {
+		return err
+	}
+	bass.(*ha.Slider).SetRange(rotel.TONE_MIN, rotel.TONE_MAX)
+	if err := self.PublishComponent(bass, true); err != nil {
+		return err
+	}
+	treble, err := self.ha.AddSlider(self.id, "treble", "Treble")
+	if err != nil {
+		return err
+	}
+	treble.(*ha.Slider).SetRange(rotel.TONE_MIN, rotel.TONE_MAX)
+	if err := self.PublishComponent(treble, true); err != nil {
+		return err
+	}
+
 	// Add input source
-	source, err := self.ha.AddInput("rotel_amp00_input", "rotel_amp00_input", rotel.SOURCES)
+	source, err := self.ha.AddInput(self.id, "input", rotel.SOURCES)
 	if err != nil {
 		return err
 	}
@@ -184,9 +204,10 @@ FOR_LOOP:
 					log.Println("error setting status:", err)
 				} else {
 					log.Println("Home assistant status has changed:", self.ha)
+					// TODO: Get all latest rotel state
 				}
 			} else if err := self.ha.Command(evt.Topic, evt.Data); err != nil {
-				fmt.Println("other event=", evt)
+				log.Println("other event: ", evt)
 			}
 		case evt := <-self.statech:
 			self.Logger.Println("publishing", string(evt.Data), "to", evt.Component.StateTopic())
@@ -218,6 +239,20 @@ FOR_LOOP:
 			if evt.Component == source {
 				if err := self.rotel.SetSource(string(evt.Data)); err != nil {
 					log.Println("error setting source:", err)
+				}
+			}
+			if evt.Component == bass {
+				if value, err := strconv.ParseInt(string(evt.Data), 10, 32); err != nil {
+					log.Println("error parsing bass:", err)
+				} else if err := self.rotel.SetBass(int(value)); err != nil {
+					log.Println("error setting bass:", err)
+				}
+			}
+			if evt.Component == treble {
+				if value, err := strconv.ParseInt(string(evt.Data), 10, 32); err != nil {
+					log.Println("error parsing treble:", err)
+				} else if err := self.rotel.SetTreble(int(value)); err != nil {
+					log.Println("error setting treble:", err)
 				}
 			}
 		case evt := <-rotelch:
@@ -254,6 +289,14 @@ FOR_LOOP:
 			if evt.Flag.Is(rotel.ROTEL_FLAG_SOURCE) {
 				v := self.rotel.Source()
 				self.StateCallback(source, []byte(v))
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_BASS) {
+				str := fmt.Sprintf("%d", self.rotel.Bass())
+				self.StateCallback(bass, []byte(str))
+			}
+			if evt.Flag.Is(rotel.ROTEL_FLAG_TREBLE) {
+				str := fmt.Sprintf("%d", self.rotel.Treble())
+				self.StateCallback(treble, []byte(str))
 			}
 		}
 	}

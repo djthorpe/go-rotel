@@ -12,7 +12,7 @@ To run the docker container on an ARM64 host,
 
 ```bash
 docker run --rm --name rotel --device=/dev/ttyUSB1 \
-  ghcr.io/djthorpe/go-rotel-linux-arm64:1.0.12 \
+  ghcr.io/djthorpe/go-rotel-linux-arm64:1.0.14 \
   rotel -mqtt ipaddress:1883 -tty /dev/ttyUSB1
 ```
 
@@ -30,7 +30,9 @@ with a specific ip address and port 1883. The command line arguments for the rot
 ```bash
 Usage of rotel:
   -credentials string
-    	MQTT credentails (user:password)
+    	MQTT credentials (user:password)
+  -id string
+    	Unique identifier for Rotel device (default "amp00")
   -mqtt string
     	MQTT broker address (default "localhost:1833")
   -qos int
@@ -77,19 +79,18 @@ show_header_toggle: false
 state_color: true
 ```
 
+If you have more than one amplifier, you can change the unique identifier `amp00` to something else with the `-id` argument,
+and update the YAML accordingly.
+
 ## Contributions, etc
 
 Contributions are welcome. Please raise an issue or pull request on the GitHub repository. The limitations at the me moment are,
 
-* A -name parameter should uniquely identify the amplifier (at the moment it's hard-coded to "amp00")
 * Only the power, volume, source and speaker are exposed (it wouldn't be difficult to expose more controls). These are the other controls which could be added:
   * ROTEL_FLAG_MUTE
-  * ROTEL_FLAG_BASS
-  * ROTEL_FLAG_TREBLE
   * ROTEL_FLAG_BALANCE
   * ROTEL_FLAG_BYPASS
   * ROTEL_FLAG_DIMMER
 * Implement the following push buttons: play, stop, pause, track_next, track_prev, mute_toggle, vol_up, vol_down, bass_up, bass_down, bass_reset, treble_up, treble_down, treble_reset, balance_left, balance_right, balance_reset, dimmer_toggle, power_toggle
 * Code is only tested on an A12 amplifier, but should work on other models
 * A github workflow only works with Intel platform
-* Only one amplifier and serial port can be controlled per host

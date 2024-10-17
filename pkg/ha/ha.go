@@ -108,8 +108,9 @@ func (self *HA) SetStatus(v string) error {
 	return nil
 }
 
-func (self *HA) AddPowerButton(id, object_id string) (Component, error) {
-	component, err := NewPowerButton(self.topic, id, object_id)
+func (self *HA) AddPowerButton(prefix, suffix string) (Component, error) {
+	object_id := strings.ToLower(prefix + "_" + suffix)
+	component, err := NewPowerButton(self.topic, object_id, object_id)
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +120,9 @@ func (self *HA) AddPowerButton(id, object_id string) (Component, error) {
 	return component, nil
 }
 
-func (self *HA) AddSpeaker(id, object_id string, speakerName string) (Component, error) {
-	component, err := NewSpeaker(self.topic, id, object_id, speakerName)
+func (self *HA) AddSpeaker(prefix, suffix string, speakerName string) (Component, error) {
+	object_id := strings.ToLower(prefix + "_" + suffix)
+	component, err := NewSpeaker(self.topic, object_id, object_id, speakerName)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +132,9 @@ func (self *HA) AddSpeaker(id, object_id string, speakerName string) (Component,
 	return component, nil
 }
 
-func (self *HA) AddVolume(id, object_id string) (Component, error) {
-	component, err := NewVolume(self.topic, id, object_id)
+func (self *HA) AddVolume(prefix, suffix string) (Component, error) {
+	object_id := strings.ToLower(prefix + "_" + suffix)
+	component, err := NewVolume(self.topic, object_id, object_id)
 	if err != nil {
 		return nil, err
 	}
@@ -141,8 +144,21 @@ func (self *HA) AddVolume(id, object_id string) (Component, error) {
 	return component, nil
 }
 
-func (self *HA) AddInput(id, object_id string, options []string) (Component, error) {
-	component, err := NewInput(self.topic, id, object_id, options)
+func (self *HA) AddSlider(prefix, suffix string, name string) (Component, error) {
+	object_id := strings.ToLower(prefix + "_" + suffix)
+	component, err := NewSlider(self.topic, object_id, object_id, name)
+	if err != nil {
+		return nil, err
+	}
+	if err := self.AddComponent(component); err != nil {
+		return nil, err
+	}
+	return component, nil
+}
+
+func (self *HA) AddInput(prefix, suffix string, options []string) (Component, error) {
+	object_id := strings.ToLower(prefix + "_" + suffix)
+	component, err := NewInput(self.topic, object_id, object_id, options)
 	if err != nil {
 		return nil, err
 	}

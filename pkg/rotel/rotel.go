@@ -45,6 +45,8 @@ const (
 	deltaUpdate         = 500 * time.Millisecond
 	VOLUME_MIN          = 1
 	VOLUME_MAX          = 96
+	TONE_MIN            = -10 // Bass and treble
+	TONE_MAX            = 10  // Bass and treble
 )
 
 var (
@@ -107,7 +109,7 @@ FOR_LOOP:
 		case <-ctx.Done():
 			break FOR_LOOP
 		case <-timer.C:
-			if cmd := self.state.Update(); cmd != "" {
+			if cmd := self.state.Update(false); cmd != "" {
 				if err := self.writetty(cmd); err != nil {
 					send(ch, Event{ROTEL_FLAG_NONE, fmt.Errorf("writetty: %w", err)})
 				}
@@ -191,6 +193,42 @@ func (self *Rotel) SetVolume(value uint) error {
 	}
 }
 
+func (self *Rotel) SetBass(value int) error {
+	// Cannot set value when power is off
+	if self.Power() == false {
+		return ErrOutOfOrder.With("SetBass")
+	}
+
+	// Check parameter and send command
+	if value < TONE_MIN || value > TONE_MAX {
+		return ErrBadParameter.With("SetBass")
+	} else if value == 0 {
+		return self.writetty("bass_000!")
+	} else if value < 0 {
+		return self.writetty(fmt.Sprint("bass_", value, "!"))
+	} else {
+		return self.writetty(fmt.Sprint("bass_+", value, "!"))
+	}
+}
+
+func (self *Rotel) SetTreble(value int) error {
+	// Cannot set value when power is off
+	if self.Power() == false {
+		return ErrOutOfOrder.With("SetTreble")
+	}
+
+	// Check parameter and send command
+	if value < TONE_MIN || value > TONE_MAX {
+		return ErrBadParameter.With("SetTreble")
+	} else if value == 0 {
+		return self.writetty("treble_000!")
+	} else if value < 0 {
+		return self.writetty(fmt.Sprint("treble_", value, "!"))
+	} else {
+		return self.writetty(fmt.Sprint("treble_+", value, "!"))
+	}
+}
+
 /*
 func (this *Manager) SetMute(state bool) error {
 	// Cannot set value when power is off
@@ -217,42 +255,6 @@ func (this *Manager) SetBypass(state bool) error {
 		return this.writetty("bypass_on!")
 	} else {
 		return this.writetty("bypass_off!")
-	}
-}
-
-func (this *Manager) SetTreble(value int) error {
-	// Cannot set value when power is off
-	if this.Power() == false {
-		return ErrOutOfOrder.With("SetTreble")
-	}
-
-	// Check parameter and send command
-	if value < -10 || value > 10 {
-		return ErrBadParameter.With("SetTreble")
-	} else if value == 0 {
-		return this.writetty("treble_000!")
-	} else if value < 0 {
-		return this.writetty(fmt.Sprint("treble_", value, "!"))
-	} else {
-		return this.writetty(fmt.Sprint("treble_+", value, "!"))
-	}
-}
-
-func (this *Manager) SetBass(value int) error {
-	// Cannot set value when power is off
-	if this.Power() == false {
-		return ErrOutOfOrder.With("SetBass")
-	}
-
-	// Check parameter and send command
-	if value < -10 || value > 10 {
-		return ErrBadParameter.With("SetBass")
-	} else if value == 0 {
-		return this.writetty("bass_000!")
-	} else if value < 0 {
-		return this.writetty(fmt.Sprint("bass_", value, "!"))
-	} else {
-		return this.writetty(fmt.Sprint("bass_+", value, "!"))
 	}
 }
 
